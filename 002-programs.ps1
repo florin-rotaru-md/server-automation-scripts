@@ -1,62 +1,8 @@
-
-# 001-setup.ps1
-
 # Ensure script is running as admin
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Error "Please run this script as Administrator"
     exit 1
 }
-
-function Ensure-WindowsFeature {
-    param (
-        [string]$FeatureName
-    )
-    if (-not (Get-WindowsFeature -Name $FeatureName).Installed) {
-        Write-Host "Installing feature: $FeatureName" -ForegroundColor Cyan
-        Install-WindowsFeature -Name $FeatureName -IncludeManagementTools
-    }
-    else {
-        Write-Host "Feature already installed: $FeatureName" -ForegroundColor Green
-    }
-}
-
-# DNS Role
-Ensure-WindowsFeature -FeatureName "DNS"
-
-# IIS and Features
-$features = @(
-    "Web-Server",
-    "Web-Default-Doc", 
-    "Web-Http-Errors", 
-    "Web-Static-Content", 
-    "Web-Http-Redirect",
-    "Web-Stat-Compression",
-    "Web-Filtering", 
-    "Web-Cert-Auth", 
-    "Web-IP-Security",
-    "Web-Mgmt-Console", 
-    "Web-Mgmt-Service", 
-    "Web-Scripting-Tools"
-)
-foreach ($feature in $features) {
-    Ensure-WindowsFeature -FeatureName $feature
-}
-
-# Remove features
-$featuresToRemove = @(
-    "Web-Dir-Browsing",
-    "Web-Http-Logging"
-)
-foreach ($feature in $featuresToRemove) {
-    if ((Get-WindowsFeature -Name $feature).Installed) {
-        Write-Host "Removing feature: $feature" -ForegroundColor Cyan
-        Uninstall-WindowsFeature -Name $feature
-    }
-}
-
-# Enable Management Service (WMSVC)
-Set-Service -Name WMSVC -StartupType Automatic
-Start-Service WMSVC
 
 $tempInstallerPath = "C:\temp"
 New-Item -Path $tempInstallerPath -ItemType Directory -Force | Out-Null
@@ -73,7 +19,7 @@ function Install-Application {
     # Check if the application is already installed
     If (-Not (Test-Path $AppExecutablePath)) {
         Write-Host "Installing $AppName..."
-        
+        f
         # Download the installer
         Invoke-WebRequest -Uri $InstallerUrl -OutFile $InstallerPath
         
@@ -90,6 +36,40 @@ function Install-Application {
     }
 }
 
+# Install Git SCM if not already installed
+Install-Application -AppName "Git" `
+    -AppExecutablePath "C:\Program Files\Git\bin" `
+    -InstallerUrl "https://github.com/git-for-windows/git/releases/download/v2.49.0.windows.1/Git-2.49.0-64-bit.exe" `
+    -InstallerPath "$tempInstallerPath\Git-2.49.0-64-bit.exe" `
+    -InstallArgs '/VERYSILENT /NORESTART /COMPONENTS="icons,ext,ext\reg,assoc,assoc_sh" /LOG="C:\temp\git_install.log"'
+
+# Post-install Git config adjustments
+$gitExe = "C:\Program Files\Git\bin\git.exe"
+
+if (Test-Path $gitExe) {
+    Write-Host "Configuring Git user settings..." -ForegroundColor Cyan
+
+    & $gitExe config --global core.autocrlf true                             # Windows-style checkout, UNIX-style commit
+    & $gitExe config --global core.editor "code --wait"                      # Use Visual Studio Code as default editor
+    & $gitExe config --global credential.helper manager                      # Use Git Credential Manager
+    & $gitExe config --global merge.ff false                                 # Fast-forward or merge
+    & $gitExe config --global gui.encoding utf-8
+    & $gitExe config --global core.fileMode false                            # Optional: disable file mode checking
+    & $gitExe config --global core.preloadIndex true                         # File system caching
+    & $gitExe config --global core.fscache true                              # Extra file system cache boost
+    & $gitExe config --global init.defaultBranch main                        # Optional: default branch name
+
+    Write-Host "Git configuration completed." -ForegroundColor Green
+} else {
+    Write-Warning "Git executable not found. Skipping Git configuration."
+}
+
+# Install .NET 8 SDK
+Install-Application -AppName ".NET 8 SDK" `
+    -AppExecutablePath  "C:\Program Files\dotnet\sdk" `
+    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.408/dotnet-sdk-8.0.408-win-x64.exe" `
+    -InstallerPath "$tempInstallerPath\dotnet-sdk-8.0.408-win-x64.exe"
+
 # Install .NET 8 Hosting Bundle
 Install-Application -AppName ".NET 8 Hosting Bundle" `
     -AppExecutablePath  "C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.15" `
@@ -100,7 +80,7 @@ Install-Application -AppName ".NET 8 Hosting Bundle" `
 Install-Application -AppName "Notepad++" `
     -AppExecutablePath  "C:\Program Files\Notepad++" `
     -InstallerUrl "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.7.9/npp.8.7.9.Installer.x64.exe" `
-    -InstallerPath "$tempInstallerPath\npp_installer.exe"
+    -InstallerPath "$tempInstallerPath\npp.8.7.9.Installer.x64.exe"
 
 # Install Visual Studio Code if not already installed
 Install-Application -AppName "Visual Studio Code" `
@@ -108,7 +88,37 @@ Install-Application -AppName "Visual Studio Code" `
     -InstallerUrl "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64" `
     -InstallerPath "$tempInstallerPath\vscode_installer.exe" `
     -InstallArgs "/verysilent /mergetasks=!runcode"
+
+$handleDestinationFolder = "C:\Program Files\Handle"
+if (!(Test-Path $handleDestinationFolder)) {
+    New-Item -ItemType Directory -Path $handleDestinationFolder
     
+    $handleUrl = "https://download.sysinternals.com/files/Handle.zip"
+    $handleZipFilePath = "$handleDestinationFolder\Handle.zip"
+    Invoke-WebRequest -Uri $handleUrl -OutFile $handleZipFilePath
+    Expand-Archive -Path $handleZipFilePath -DestinationPath $handleDestinationFolder -Force
+    Remove-Item $handleZipFilePath -Force
+    Write-Host "Handle has been installed."
+} Else {
+    Write-Host "Handle is already installed."
+}
+	
+$winAcmeDestinationFolder = "C:\Program Files\Win-Acme"
+if (!(Test-Path $winAcmeDestinationFolder)) {
+    New-Item -ItemType Directory -Path $winAcmeDestinationFolder
+
+    $winAcmeUrl = "https://github.com/win-acme/win-acme/releases/download/v2.2.9.1701/win-acme.v2.2.9.1701.x64.pluggable.zip"
+    $winAcmeZipFilePath = "$winAcmeDestinationFolder\win-acme.zip"
+    Invoke-WebRequest -Uri $winAcmeUrl -OutFile $winAcmeZipFilePath
+    Expand-Archive -Path $winAcmeZipFilePath -DestinationPath $winAcmeDestinationFolder -Force
+    Remove-Item $winAcmeZipFilePath -Force
+    Write-Host "Win-Acme has been installed."
+} Else {
+    Write-Host "Win-Acme is already installed."
+}
+
+
+
 $pgInstallArgs = @(
     "--mode", "unattended",
     "--superpassword", "postgres",

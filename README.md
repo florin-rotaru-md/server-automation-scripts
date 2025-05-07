@@ -6,9 +6,13 @@ A collection of PowerShell scripts to quickly configure Windows Server 2022 for 
 
 The main script:
 
-- Installs DNS Server and IIS with common features
-- Installs .NET 8 Hosting Bundle
-- Installs tools via Winget:
+- Installs 
+  - DNS Server and IIS with common features
+  - Git SCM
+  - Handle
+  - Win-Acme
+  - .NET 8 SDK
+  - .NET 8 Hosting Bundle
   - Visual Studio Code
   - Notepad++
   - PostgreSQL 17
@@ -19,4 +23,4 @@ The main script:
 > Run this command in PowerShell (as Administrator):
 
 ```powershell
-iex "& { $(irm 'https://raw.githubusercontent.com/florin-rotaru-md/server-automation-scripts/main/001-setup.ps1') }"
+iex "& { $(irm 'https://raw.githubusercontent.com/florin-rotaru-md/server-automation-scripts/main/{script}.ps1') }"
