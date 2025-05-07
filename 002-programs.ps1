@@ -19,7 +19,7 @@ function Install-Application {
     # Check if the application is already installed
     If (-Not (Test-Path $AppExecutablePath)) {
         Write-Host "Installing $AppName..."
-        f
+        
         # Download the installer
         Invoke-WebRequest -Uri $InstallerUrl -OutFile $InstallerPath
         
