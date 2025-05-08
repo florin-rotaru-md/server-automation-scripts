@@ -10,6 +10,11 @@ param(
     [string]$httpBinding
 )
 
+$ErrorActionPreference = "Stop"
+if (-not (Get-Module -Name WebAdministration)) {
+    Import-Module WebAdministration -ErrorAction Stop
+}
+
 function Kill-LockedProcess {
     param([string]$path)
 	
@@ -48,8 +53,6 @@ function Cleanup-Folders {
     }
 }
 
-
-$ErrorActionPreference = "Stop"
 try {
     $greenPath = Join-Path $greenRootPath $siteName
     if (-Not (Test-Path $greenPath)) {
@@ -60,10 +63,10 @@ try {
     if (-Not (Get-Website -Name $siteName -ErrorAction SilentlyContinue)) {
         Write-Host "Creating IIS site and app pool..."
 
-        if (Get-WebAppPoolState -Name $siteName -ErrorAction SilentlyContinue) {
-            Write-Host "App pool '$siteName' already exists. Removing it..."
-            Remove-WebAppPool -Name $siteName -ErrorAction SilentlyContinue
-        }
+        if (Test-Path "IIS:\AppPools\$siteName") {
+			Write-Host "App pool '$siteName' already exists. Removing it..."
+			Remove-WebAppPool -Name $siteName -ErrorAction SilentlyContinue
+		}
 
         New-WebAppPool -Name $siteName
 		Set-ItemProperty "IIS:\AppPools\$siteName" -Name "managedRuntimeVersion" -Value ""
@@ -118,4 +121,3 @@ try {
     Cleanup-Folders -folders @($localRepoPath, $blueDeployPath)
     exit 1
 }
-
