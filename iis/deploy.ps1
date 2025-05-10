@@ -11,12 +11,16 @@ param(
 . ".\Get-Repo.ps1"
 . ".\Remove-DirectoryContents.ps1"
 . ".\Remove-ReferencePathAndOlderDirectories.ps1"
+. ".\Switch-ToInactiveWebsiteSlot.ps1"
+. ".\Test-WebsiteHealth.ps1"
 
 $ErrorActionPreference = "Stop"
 if (-not (Get-Module -Name WebAdministration)) {
     Import-Module WebAdministration -ErrorAction Stop
 }
 
+$config = Get-Content ".\Config.json" | ConvertFrom-Json
+# Write-Host "Config: $($config | ConvertTo-Json -Depth 7)" -ForegroundColor Green
 
 $deployHash = [guid]::NewGuid().ToString().Split('-')[0]
 
@@ -46,101 +50,43 @@ $csprojPath = Join-Path $buildSourcePath $projectPath
 Write-Host "dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true"
 dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true
 
-
-$greenWebSiteName = "${site}_green"
-$greenWebSitePort = 8081
-
-$blueWebSiteName = "${site}_blue"
-$blueWebSitePort = 8082
-
-Write-Host "Confirm - $greenWebSiteName - WebSite"
-Confirm-WebSite -SiteName $greenWebSiteName `
-    -Port $greenWebSitePort `
+Write-Host "Confirm - ${site}_green - WebSite"
+Confirm-WebSite -SiteName "${site}_green" `
+    -Port $config.green.port `
     -HostHeader $site `
     -PhysicalPath $greenWebSitePath 
 	
-Write-Host "Confirm - $blueWebSiteName - WebSite"
-Confirm-WebSite -SiteName $blueWebSiteName `
-    -Port $blueWebSitePort `
+Write-Host "Confirm - ${site}_blue - WebSite"
+Confirm-WebSite -SiteName "${site}_blue" `
+    -Port $config.blue.port `
     -HostHeader $site `
     -PhysicalPath $blueWebSitePath 
 	
+$slotInfo = Switch-ToInactiveWebsiteSlot `
+    -SiteName $site `
+    -BlueWebSitePath $blueWebSitePath `
+    -GreenWebSitePath $greenWebSitePath `
+    -BuildPublishPath $buildPublishPath 
+    # -ConfirmPathsCallback { param($path) Confirm-Paths -Paths $path }
 
-Write-Host "Determine active / inactive WebSite"
-$bindingInfo = @(Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$site" })
-if ($bindingInfo.Count -eq 0) {
-    $bindingInfo = @(Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:${blueWebSitePort}:$site" })
-}
-
-# $bindingInfo[0].PSObject.Properties | ForEach-Object { Write-Host "$($_.Name): $($_.Value)" }
-
-$activeWebSiteName = $bindingInfo[0].ItemXPath -replace ".*name='([^']+)'.*", '$1'
-
-$inactiveWebSiteName = $null
-$inactiveWebSitePath = ""
-
-if ($activeWebSiteName -eq $blueWebSiteName) { 
-    $inactiveWebSiteName = $greenWebSiteName 
-    $inactiveWebSitePath = $greenWebSitePath
-
-    Confirm-Paths -Paths $greenWebSitePath
-}
-else { 
-    $inactiveWebSiteName = $blueWebSiteName 
-    $inactiveWebSitePath = $blueWebSitePath
-
-    Confirm-Paths -Paths $blueWebSitePath
-}
-
-Write-Host "Active Site: $activeWebSiteName, deploying to inactive site: $inactiveWebSiteName at $inactiveWebSitePath" -ForegroundColor Green
-
-$state = Get-WebAppPoolState -Name $inactiveWebSiteName
-if ($state.Value -ne "Stopped") {
-    Stop-WebAppPool -Name $inactiveWebSiteName
-    do {
-        $state = Get-WebAppPoolState -Name $inactiveWebSiteName
-        Start-Sleep -Milliseconds 330
-    } while ($state.Value -ne "Stopped")
-}
-
-
-Copy-Item "$buildPublishPath\*" "$inactiveWebSitePath" -Recurse
-Set-ItemProperty "IIS:\\Sites\\$inactiveWebSiteName" -Name physicalPath -Value $inactiveWebSitePath
-Start-WebAppPool -Name $inactiveWebSiteName
+# Write-Host "slotInfo: $($slotInfo | ConvertTo-Json -Depth 7)" -ForegroundColor Green
 
 Write-Host "Remove - current and older published versions $buildPublishPath" -ForegroundColor Green
 Remove-ReferencePathAndOlderDirectories -Path (Get-Item $buildPublishPath).Parent.FullName -ReferencePath $buildPublishPath
 
-Write-Host "Remove - non active WebSite versions of $inactiveWebSiteName" -ForegroundColor Green
-Remove-DirectoryContents -Directory (Get-Item $inactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $inactiveWebSitePath).Name)
+Write-Host "Remove - non active WebSite versions of $($slotInfo.InactiveWebSiteName)" -ForegroundColor Green
+Remove-DirectoryContents -Directory (Get-Item $slotInfo.InactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $slotInfo.InactiveWebSitePath).Name)
+
+Test-WebsiteHealth -Url "http://localhost:$($slotInfo.InactiveWebSitePort)/.well-known/live" `
+    -Headers @{"Host" = "${site}:$($slotInfo.InactiveWebSitePort)"} `
+    -Attempts 33 `
+    -TimeoutSec 1 `
+    -PauseSec 3
 
 
-
-# $headers = @{"Host" = "api.waa.ro:8082"}
-# Invoke-WebRequest -Uri "http://localhost:8082" -Headers $headers
-
-# Health check before going live
-$inactiveWebSitePort = if ($inactiveWebSiteName -eq $blueWebSiteName) { $blueWebSitePort } else { $greenWebSitePort }
-try {
-	$headers = @{"Host" = "${site}:$inactiveWebSitePort"}
-	$healthUrl = "http://localhost:$inactiveWebSitePort/.well-know/live"
-	Write-Host "Host = ${site}:$inactiveWebSitePort, http://localhost:$inactiveWebSitePort/.well-know/live"
-	
-    Write-Host "Health check on $inactiveWebSiteName" -ForegroundColor Green
-    $healthResponse = Invoke-WebRequest -Uri $healthUrl -Headers $headers -TimeoutSec 60
-    Write-Host "Health check response: $($healthResponse.StatusCode)" -ForegroundColor Green
-    if ($healthResponse.StatusCode -ne 200) {
-        throw "Health check failed with status code $($healthResponse.StatusCode)"
-    }
-    Write-Host "Health check passed for $inactiveWebSiteName"
-}
-catch {
-    Write-Error "Health check failed on $inactiveWebSiteName. Deployment aborted."
-    exit 1
-}
 
 # # Swap binding (activate new, backup old)
-# Write-Host "🔁 Swapping production binding to $inactiveSite"
+# Write-Host "Swapping production binding to $inactiveSite"
 # try {
 # # Remove prod binding from active
 # Remove-WebBinding -Name $activeSite -BindingInformation $prodBinding -Protocol http
