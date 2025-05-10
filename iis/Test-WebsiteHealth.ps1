@@ -36,7 +36,7 @@ function Test-WebsiteHealth {
             }
 
             if ($response.StatusCode -eq 200) {
-                Write-Host "200 OK on attempt ${i}" -ForegroundColor Green
+                Write-Host "Health check - 200 OK on attempt ${i}" -ForegroundColor Green
                 return $true
             } else {
                 Write-Host "Attempt ${i} -> HTTP $($response.StatusCode) - retrying" -ForegroundColor Yellow

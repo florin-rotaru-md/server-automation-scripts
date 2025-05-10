@@ -25,6 +25,8 @@ function Switch-ToInactiveWebsiteSlot {
         #[scriptblock]$ConfirmPathsCallback
     )
 
+    . ".\Test-WebsiteHealth.ps1"
+
     $config = Get-Content ".\Config.json" | ConvertFrom-Json
     $inactiveWebSiteName = $null
     $inactiveWebSitePath = $null
@@ -86,7 +88,24 @@ function Switch-ToInactiveWebsiteSlot {
     # Start AppPool
     Start-WebAppPool -Name $inactiveWebSiteName
 
-    # Return info (for logging or health check)
+    Test-WebsiteHealth -Url "http://localhost:$inactiveWebSitePort/.well-known/live" `
+        -Headers @{"Host" = "${site}:$inactiveWebSitePort"} `
+        -Attempts 33 `
+        -TimeoutSec 1 `
+        -PauseSec 3
+
+    $activeWebSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$SiteName" } | Select-Object -First 1
+    
+    if ($activeWebSiteBindingInfo) {
+        $activeWebSiteName = $activeWebSiteBindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
+        
+        Write-Host "Removing "*:80:$SiteName" binding for $activeWebSiteName" -ForegroundColor Green
+        Remove-WebBinding -Name $activeWebSiteName -BindingInformation "*:80:$SiteName" -Protocol http
+    }
+    
+    Write-Host "New binding *:80:$SiteName for $($inactiveWebSiteName)" -ForegroundColor Green
+    New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$SiteName"
+    
     return @{
         ActiveWebSiteName   = $activeWebSiteName
         InactiveWebSiteName = $inactiveWebSiteName

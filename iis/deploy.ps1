@@ -12,7 +12,6 @@ param(
 . ".\Remove-DirectoryContents.ps1"
 . ".\Remove-ReferencePathAndOlderDirectories.ps1"
 . ".\Switch-ToInactiveWebsiteSlot.ps1"
-. ".\Test-WebsiteHealth.ps1"
 
 $ErrorActionPreference = "Stop"
 if (-not (Get-Module -Name WebAdministration)) {
@@ -76,37 +75,3 @@ Remove-ReferencePathAndOlderDirectories -Path (Get-Item $buildPublishPath).Paren
 
 Write-Host "Remove - non active WebSite versions of $($slotInfo.InactiveWebSiteName)" -ForegroundColor Green
 Remove-DirectoryContents -Directory (Get-Item $slotInfo.InactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $slotInfo.InactiveWebSitePath).Name)
-
-Test-WebsiteHealth -Url "http://localhost:$($slotInfo.InactiveWebSitePort)/.well-known/live" `
-    -Headers @{"Host" = "${site}:$($slotInfo.InactiveWebSitePort)"} `
-    -Attempts 33 `
-    -TimeoutSec 1 `
-    -PauseSec 3
-
-
-
-# # Swap binding (activate new, backup old)
-# Write-Host "Swapping production binding to $inactiveSite"
-# try {
-# # Remove prod binding from active
-# Remove-WebBinding -Name $activeSite -BindingInformation $prodBinding -Protocol http
-# # Add prod binding to inactive
-# New-WebBinding -Name $inactiveSite -Protocol http -Port 80 -IPAddress "*" -HostHeader ""
-
-# # Optional post-deployment health check (sanity)
-# $finalCheck = Invoke-WebRequest -Uri "http://localhost$healthCheckPath" -UseBasicParsing -TimeoutSec 10
-# if ($finalCheck.StatusCode -ne 200) {
-# throw "Final health check failed after go-live."
-# }
-
-# Write-Host "🎉 Deployment successful! Live site is now $inactiveSite"
-# }
-# catch {
-# Write-Error "⚠️ Error after binding swap: $_. Rolling back to $activeSite"
-
-# # Restore binding to previous active site
-# Remove-WebBinding -Name $inactiveSite -BindingInformation $prodBinding -Protocol http -ErrorAction SilentlyContinue
-# New-WebBinding -Name $activeSite -Protocol http -Port 80 -IPAddress "*" -HostHeader ""
-
-# Write-Host "🔁 Rollback completed. $activeSite is live again."
-# }
