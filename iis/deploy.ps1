@@ -22,8 +22,6 @@ $config = Get-Content ".\Config.json" | ConvertFrom-Json
 # Write-Host "Config: $($config | ConvertTo-Json -Depth 7)" -ForegroundColor Green
 
 $deployHash = [guid]::NewGuid().ToString().Split('-')[0]
-
-# Remove ".git" extension and split by "/" then take the last segment
 $repoName = ($repoUrl -replace "\.git$", "").Split("/")[-1]
 
 $buildRoot = "C:\repos\$repoName"

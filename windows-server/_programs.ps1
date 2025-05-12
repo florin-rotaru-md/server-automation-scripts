@@ -4,36 +4,16 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+. ".\Install-Application.ps1"
+
+$ProgressPreference = 'SilentlyContinue'
+
 $tempInstallerPath = "C:\temp"
 New-Item -Path $tempInstallerPath -ItemType Directory -Force | Out-Null
 
-function Install-Application {
-    param (
-        [string]$AppName, # Name of the application (e.g., Notepad++, VSCode)
-        [string]$AppExecutablePath, # Path to check if the app is already installed
-        [string]$InstallerUrl, # URL to download the installer
-        [string]$InstallerPath, # Temporary path for the installer
-        [string]$InstallArgs = "/S" # Arguments for silent installation
-    )
-
-    # Check if the application is already installed
-    If (-Not (Test-Path $AppExecutablePath)) {
-        Write-Host "Installing $AppName..."
-        
-        # Download the installer
-        Invoke-WebRequest -Uri $InstallerUrl -OutFile $InstallerPath
-        
-        # Install the application silently
-        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -Wait
-        
-        # Clean up installer file
-        Remove-Item -Path $InstallerPath
-        
-        Write-Host "$AppName has been installed."
-    }
-    Else {
-        Write-Host "$AppName is already installed."
-    }
+if ($PSVersionTable.PSVersion.ToString() -notmatch "^7\.5\..*") {
+	Invoke-WebRequest -Uri "https://github.com/PowerShell/PowerShell/releases/download/v7.5.1/PowerShell-7.5.1-win-x64.msi" -OutFile "$tempInstallerPath\PowerShell-7.5.1-win-x64.msi"
+	Start-Process -FilePath "msiexec.exe" -ArgumentList "/i $tempInstallerPath\PowerShell-7.5.1-win-x64.msi /qn" -Wait
 }
 
 # Install Git SCM if not already installed
@@ -104,6 +84,13 @@ Install-Application -AppName "Visual Studio Code" `
     -InstallerPath "$tempInstallerPath\vscode_installer.exe" `
     -InstallArgs "/verysilent /mergetasks=!runcode"
 
+# https://www.iis.net/downloads/microsoft/application-request-routing
+# Install Request Router (IIS extension)
+Install-Application -AppName "Request Router" `
+    -AppExecutablePath "C:\Program Files\IIS\Application Request Routing" `
+    -InstallerUrl "https://download.microsoft.com/download/E/9/8/E9849D6A-020E-47E4-9FD0-A023E99B54EB/requestRouter_amd64.msi" `
+    -InstallerPath "$tempInstallerPath\requestRouter_x64.msi" `
+    -InstallArgs "/quiet /norestart"
 
 $handleDestinationFolder = "C:\Program Files\Handle"
 if (!(Test-Path $handleDestinationFolder)) {
@@ -132,7 +119,6 @@ if (!(Test-Path $winAcmeDestinationFolder)) {
 } Else {
     Write-Host "Win-Acme is already installed."
 }
-
 
 
 $pgInstallArgs = @(

@@ -4,7 +4,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-function Ensure-WindowsFeature {
+function Install-WindowsFeatureIfNeeded {
     param (
         [string]$FeatureName
     )
@@ -18,7 +18,7 @@ function Ensure-WindowsFeature {
 }
 
 # DNS Role
-Ensure-WindowsFeature -FeatureName "DNS"
+Install-WindowsFeatureIfNeeded -FeatureName "DNS"
 
 # IIS and Features
 $features = @(
@@ -33,14 +33,19 @@ $features = @(
     "Web-IP-Security",
     "Web-Mgmt-Console", 
     "Web-Mgmt-Service", 
-    "Web-Scripting-Tools"
+    "Web-Scripting-Tools",
+    "Web-App-Dev",
+    "Web-ISAPI-Ext",
+    "Web-ISAPI-Filter",
+    "Web-Dyn-Compression"
 )
 foreach ($feature in $features) {
-    Ensure-WindowsFeature -FeatureName $feature
+    Install-WindowsFeatureIfNeeded -FeatureName $feature
 }
 
 # Remove features
 $featuresToRemove = @(
+    "Web-DAV-Publishing",    
     "Web-Dir-Browsing",
     "Web-Http-Logging"
 )

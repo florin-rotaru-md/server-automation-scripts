@@ -1,0 +1,2 @@
+Set-ExecutionPolicy Unrestricted -Scope Process -Force
+.\pg-ssd-setup-replica.ps1
