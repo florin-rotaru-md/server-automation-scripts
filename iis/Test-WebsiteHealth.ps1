@@ -23,6 +23,8 @@ function Test-WebsiteHealth {
         [int]$PauseSec   = 3
     )
 
+    $ProgressPreference = 'SilentlyContinue'
+
     Write-Host "Health check: $Url  (Attempts: $Attempts, Timeout/try: ${TimeoutSec}s)" -ForegroundColor Cyan
     Write-Host "Header: $($Headers | ConvertTo-Json -Depth 3)"
 

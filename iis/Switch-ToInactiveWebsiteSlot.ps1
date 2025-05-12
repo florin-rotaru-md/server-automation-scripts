@@ -18,13 +18,14 @@ function Switch-ToInactiveWebsiteSlot {
             ScriptBlock to confirm directory path validity (e.g., Confirm-Paths -Paths <...>).
     #>
     param (
-        [string]$SiteName,
+        [string]$WebSiteName,
         [string]$BlueWebSitePath,
         [string]$GreenWebSitePath,
         [string]$BuildPublishPath
         #[scriptblock]$ConfirmPathsCallback
     )
 
+    Import-Module WebAdministration
     . ".\Test-WebsiteHealth.ps1"
 
     $config = Get-Content ".\Config.json" | ConvertFrom-Json
@@ -35,26 +36,30 @@ function Switch-ToInactiveWebsiteSlot {
     Write-Host "Determining active / inactive WebSite slot..." -ForegroundColor Cyan
 
     # Get binding info
-    $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$SiteName" } | Select-Object -First 1
+    Write-Host "Trying to get *:80:$WebSiteName binding..."
+    $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$WebSiteName" } | Select-Object -First 1
      
     if (!$bindingInfo) {
-        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:$($config.ports.blue):$SiteName" } | Select-Object -First 1
+        Write-Host "Trying to get *:$($config.blue.port):$WebSiteName binding..."
+        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:$($config.blue.port):$WebSiteName" } | Select-Object -First 1
     }
+
+    Write-Host "Found $($bindingInfo.ItemXPath) binding"
 
     $activeWebSiteName = $bindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
 
     if (!$bindingInfo -or $activeWebSiteName -notmatch "_(blue|green)$") {
-        throw "Could not determine active site via bindings for $SiteName."
+        throw "Could not determine active site via bindings for $WebSiteName."
     }
 
     # Determine inactive slot + paths
-    if ($activeWebSiteName -eq "${site}_blue") {
-        $inactiveWebSiteName = "${site}_green"
+    if ($activeWebSiteName -eq "${WebSiteName}_blue") {
+        $inactiveWebSiteName = "${WebSiteName}_green"
         $inactiveWebSitePath = $GreenWebSitePath
         $inactiveWebSitePort = $config.green.port
     }
     else {
-        $inactiveWebSiteName = "${site}_blue"
+        $inactiveWebSiteName = "${WebSiteName}_blue"
         $inactiveWebSitePath = $BlueWebSitePath
         $inactiveWebSitePort = $config.blue.port
     }
@@ -89,22 +94,22 @@ function Switch-ToInactiveWebsiteSlot {
     Start-WebAppPool -Name $inactiveWebSiteName
 
     Test-WebsiteHealth -Url "http://localhost:$inactiveWebSitePort/.well-known/live" `
-        -Headers @{"Host" = "${site}:$inactiveWebSitePort"} `
+        -Headers @{"Host" = "${WebSiteName}:$inactiveWebSitePort"} `
         -Attempts 33 `
         -TimeoutSec 1 `
         -PauseSec 3
 
-    $activeWebSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$SiteName" } | Select-Object -First 1
+    $activeWebSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$WebSiteName" } | Select-Object -First 1
     
     if ($activeWebSiteBindingInfo) {
         $activeWebSiteName = $activeWebSiteBindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
         
-        Write-Host "Removing "*:80:$SiteName" binding for $activeWebSiteName" -ForegroundColor Green
-        Remove-WebBinding -Name $activeWebSiteName -BindingInformation "*:80:$SiteName" -Protocol http
+        Write-Host "Removing "*:80:$WebSiteName" binding for $activeWebSiteName" -ForegroundColor Green
+        Remove-WebBinding -Name $activeWebSiteName -BindingInformation "*:80:$WebSiteName" -Protocol http
     }
     
-    Write-Host "New binding *:80:$SiteName for $($inactiveWebSiteName)" -ForegroundColor Green
-    New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$SiteName"
+    Write-Host "New binding *:80:$WebSiteName for $($inactiveWebSiteName)" -ForegroundColor Green
+    New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$WebSiteName"
     
     return @{
         ActiveWebSiteName   = $activeWebSiteName

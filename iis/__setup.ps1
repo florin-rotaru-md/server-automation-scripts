@@ -20,7 +20,6 @@ Set-RegistryPropertyIfExists -path "HKLM:\SYSTEM\CurrentControlSet\Control\Secur
 Write-Output "Enable TLS 1.3 (Client)"
 Set-RegistryPropertyIfExists -path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client" -name "Enabled" -value 1
 
-
 $tempInstallerPath = "C:\temp"
 New-Item -Path $tempInstallerPath -ItemType Directory -Force | Out-Null
 
@@ -51,6 +50,8 @@ $modSecConfPath = "C:\Program Files\ModSecurity IIS\modsecurity.conf"
 if ((Test-Path $modSecConfPath) -and !(Test-Path "${modSecConfPath}.backup")) {
     Write-Host "Creating ModSecurity log folder..."
     New-Item -ItemType Directory -Path "C:\inetpub\logs\modsec" -Force | Out-Null
+
+    icacls "C:\inetpub\logs\modsec\modsec_audit.log" /grant IIS_IUSRS:F
 
     if (Test-Path "C:\Program Files\ModSecurity IIS\coreruleset") {
         Remove-Item -Path "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force
@@ -88,9 +89,7 @@ SecResponseBodyAccess Off
 SecAuditEngine RelevantOnly
 SecAuditLogParts ABIJDEFHZ
 SecAuditLogType Serial
-SecAuditLog "C:\inetpub\logs\modsec\modsec_audit.log"
-Include "C:\Program Files\ModSecurity IIS\coreruleset\crs-setup.conf"
-Include "C:\Program Files\ModSecurity IIS\coreruleset\rules\*.conf"
+SecAuditLog C:\inetpub\logs\modsec\modsec_audit.log
 "@
     Write-Host "modsecurity.conf updated."
 
@@ -99,6 +98,19 @@ Include "C:\Program Files\ModSecurity IIS\coreruleset\rules\*.conf"
 Include modsecurity.conf
 Include coreruleset/crs-setup.conf
 Include coreruleset/rules/*.conf
+
+SecDefaultAction "phase:1,pass,nolog,auditlog"
+SecDefaultAction "phase:2,pass,nolog,auditlog"
+
+SecRuleUpdateActionById 959100 "t:none,deny"
+SecRuleUpdateActionById 949110 "t:none,deny"
+
+SecRuleEngine Off
+
+SecAuditEngine Off
+SecAuditLogRelevantStatus "^(4|5)\d{2}$"
+SecAuditLogParts ABIF
+SecDebugLogLevel 0
 "@
     
 }
