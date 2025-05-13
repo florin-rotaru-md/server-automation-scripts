@@ -59,3 +59,6 @@ foreach ($feature in $featuresToRemove) {
 # Enable Management Service (WMSVC)
 Set-Service -Name WMSVC -StartupType Automatic
 Start-Service WMSVC
+
+Set-DnsServerRecursion -Enable $False
+Clear-DnsServerCache -Force
