@@ -4,7 +4,7 @@ $zones = @(
     "educa.ro",
     "educate.ro",
     "dropit.ro",
-    "waa.ro",
+#    "waa.ro",
     "statics.ro"
 )
 

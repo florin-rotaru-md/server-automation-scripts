@@ -2,8 +2,8 @@ function Switch-ToInactiveWebsiteSlot {
     <#
         .SYNOPSIS
             Determines active IIS site based on current production binding and deploys to the inactive slot.
-        .PARAMETER SiteName
-            The main host name used in bindings (e.g., yoursite.com).
+        .PARAMETER HostName
+            The host name used in bindings (e.g., yoursite.com).
         .PARAMETER BlueWebSiteName
             Name of the blue slot IIS website.
         .PARAMETER GreenWebSiteName
@@ -18,7 +18,7 @@ function Switch-ToInactiveWebsiteSlot {
             ScriptBlock to confirm directory path validity (e.g., Confirm-Paths -Paths <...>).
     #>
     param (
-        [string]$WebSiteName,
+        [string]$HostName,
         [string]$BlueWebSitePath,
         [string]$GreenWebSitePath,
         [string]$BuildPublishPath
@@ -26,42 +26,67 @@ function Switch-ToInactiveWebsiteSlot {
     )
 
     Import-Module WebAdministration
+
+    . ".\Confirm-WebSite.ps1"
+    . ".\Get-ExistingLetsEncryptCertificate.ps1"
+    . ".\Remove-DirectoryContents.ps1"
+    . ".\Request-LetsEncryptCertificate.ps1"
+    . ".\Set-LetsEncryptCertificateToIIS.ps1"
     . ".\Test-WebsiteHealth.ps1"
 
     $config = Get-Content ".\Config.json" | ConvertFrom-Json
     $inactiveWebSiteName = $null
     $inactiveWebSitePath = $null
-    $inactiveWebSitePort = 0
+    $inactiveWebSiteHttpPort = 0
 
-    Write-Host "Determining active / inactive WebSite slot..." -ForegroundColor Cyan
+    Write-Host "Confirm - $HostName on ${HostName}_green - WebSite"
+    Confirm-WebSite -WebSiteName "${HostName}_green" `
+        -HostName $HostName `
+        -PhysicalPath $GreenWebSitePath 
+    
+    Write-Host "Confirm - $HostName on ${HostName}_blue - WebSite"
+    Confirm-WebSite -WebSiteName "${HostName}_blue" `
+        -HostName $HostName `
+        -PhysicalPath $BlueWebSitePath 
+
+    $tempCompressedFiles = "C:\inetpub\temp\IIS Temporary Compressed Files"
+
+    Confirm-Paths -Paths @("$tempCompressedFiles\${HostName}_green", "$tempCompressedFiles\${HostName}_blue")
+    icacls "$tempCompressedFiles" /grant IIS_IUSRS:F
+
+    Write-Host "Determining active / inactive WebSite slot..."
 
     # Get binding info
-    Write-Host "Trying to get *:80:$WebSiteName binding..."
-    $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$WebSiteName" } | Select-Object -First 1
+    Write-Host "Trying to get *:443:$HostName binding..."
+    $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:443:$HostName" } | Select-Object -First 1
      
     if (!$bindingInfo) {
-        Write-Host "Trying to get *:$($config.blue.port):$WebSiteName binding..."
-        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:$($config.blue.port):$WebSiteName" } | Select-Object -First 1
+        Write-Host "Trying to get *:80:$HostName binding..."
+        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$HostName" } | Select-Object -First 1
     }
 
-    Write-Host "Found $($bindingInfo.ItemXPath) binding"
+    if (!$bindingInfo) {
+        Write-Host "Trying to get *:$($config.blue.httpPort):$HostName binding..."
+        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:$($config.blue.httpPort):$HostName" } | Select-Object -First 1
+    }
 
     $activeWebSiteName = $bindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
-
     if (!$bindingInfo -or $activeWebSiteName -notmatch "_(blue|green)$") {
-        throw "Could not determine active site via bindings for $WebSiteName."
+        throw "Could not determine active WebSite via bindings for $HostName."
     }
+    
+    Write-Host "Found $($bindingInfo.ItemXPath) binding"
 
     # Determine inactive slot + paths
-    if ($activeWebSiteName -eq "${WebSiteName}_blue") {
-        $inactiveWebSiteName = "${WebSiteName}_green"
+    if ($activeWebSiteName -eq "${HostName}_blue") {
+        $inactiveWebSiteName = "${HostName}_green"
         $inactiveWebSitePath = $GreenWebSitePath
-        $inactiveWebSitePort = $config.green.port
+        $inactiveWebSiteHttpPort = $config.green.httpPort
     }
     else {
-        $inactiveWebSiteName = "${WebSiteName}_blue"
+        $inactiveWebSiteName = "${HostName}_blue"
         $inactiveWebSitePath = $BlueWebSitePath
-        $inactiveWebSitePort = $config.blue.port
+        $inactiveWebSiteHttpPort = $config.blue.httpPort
     }
 
     # # Confirm path is valid (optional validation callback)
@@ -69,8 +94,7 @@ function Switch-ToInactiveWebsiteSlot {
     #     $ConfirmPathsCallback.Invoke($inactiveWebSitePath)
     # }
 
-    Write-Host "Active Site: $activeWebSiteName" -ForegroundColor Green
-    Write-Host "Deploying to inactive site: $inactiveWebSiteName at $inactiveWebSitePath" -ForegroundColor Green
+    Write-Host "Active Site: $activeWebSiteName, Deploying to inactive site: $inactiveWebSiteName at $inactiveWebSitePath" -ForegroundColor Green
 
     # Stop AppPool if needed
     $state = Get-WebAppPoolState -Name $inactiveWebSiteName
@@ -85,36 +109,55 @@ function Switch-ToInactiveWebsiteSlot {
 
     # Copy build output
     Write-Host "Copying published files to $inactiveWebSitePath..."
-    Copy-Item "$BuildPublishPath\*" "$inactiveWebSitePath" -Recurse -Force
+    Copy-Item "$BuildPublishPath" "$inactiveWebSitePath" -Recurse -Force
 
     # Update site path explicitly (IIS metadata update)
     Set-ItemProperty "IIS:\\Sites\\$inactiveWebSiteName" -Name physicalPath -Value $inactiveWebSitePath
 
+    $activeHttpWebSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$HostName" } | Select-Object -First 1
+    if ($activeHttpWebSiteBindingInfo) {
+        $activeHttpWebSiteName = $activeHttpWebSiteBindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
+                
+        if ($activeHttpWebSiteName -ne $inactiveWebSiteName) {
+            Write-Host "Remove (*:80:$HostName) binding"
+            Remove-WebBinding -BindingInformation "*:80:$HostName"
+
+            Write-Host "Create new binding (*:80:$HostName) for $($inactiveWebSiteName)"
+            New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$HostName"
+        }
+    }
+    else {
+        Write-Host "Create new binding (*:80:$HostName) for $($inactiveWebSiteName)"
+        New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$HostName"
+    }
+
     # Start AppPool
     Start-WebAppPool -Name $inactiveWebSiteName
 
-    Test-WebsiteHealth -Url "http://localhost:$inactiveWebSitePort/.well-known/live" `
-        -Headers @{"Host" = "${WebSiteName}:$inactiveWebSitePort"} `
+    Test-WebsiteHealth -Url "http://localhost:$inactiveWebSiteHttpPort/.well-known/live" `
+        -Headers @{"Host" = "${HostName}:$inactiveWebSiteHttpPort" } `
         -Attempts 33 `
         -TimeoutSec 1 `
         -PauseSec 3
 
-    $activeWebSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:80:$WebSiteName" } | Select-Object -First 1
-    
-    if ($activeWebSiteBindingInfo) {
-        $activeWebSiteName = $activeWebSiteBindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
-        
-        Write-Host "Removing "*:80:$WebSiteName" binding for $activeWebSiteName" -ForegroundColor Green
-        Remove-WebBinding -Name $activeWebSiteName -BindingInformation "*:80:$WebSiteName" -Protocol http
+    $cert = Get-ExistingLetsEncryptCertificate -HostName $HostName -MinimumDaysValid 3
+    $thumbprint = $null
+    if ($cert) {
+        Write-Host "Valid cert exists for $HostName (expires: $($cert.NotAfter))"
+        $thumbprint = $cert.Thumbprint
     }
+    else {
+        Write-Host "Requesting new certificate for $HostName"
+        $thumbprint = Request-LetsEncryptCertificate -Hostname $HostName `
+            -WebRoot "$inactiveWebSitePath" `
     
-    Write-Host "New binding *:80:$WebSiteName for $($inactiveWebSiteName)" -ForegroundColor Green
-    New-WebBinding -Name $inactiveWebSiteName -Protocol http -Port 80 -IPAddress "*" -HostHeader "$WebSiteName"
-    
-    return @{
-        ActiveWebSiteName   = $activeWebSiteName
-        InactiveWebSiteName = $inactiveWebSiteName
-        InactiveWebSitePath = $inactiveWebSitePath
-        InactiveWebSitePort = $inactiveWebSitePort
     }
+
+    Set-LetsEncryptCertificateToIIS -WebSiteName $inactiveWebSiteName `
+        -HostName $HostName `
+        -Thumbprint $thumbprint `
+        -HttpsPort 443
+
+    Write-Host "Remove - non active WebSite versions of $inactiveWebSiteName" -ForegroundColor Green
+    Remove-DirectoryContents -Directory (Get-Item $inactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $inactiveWebSitePath).Name)
 }

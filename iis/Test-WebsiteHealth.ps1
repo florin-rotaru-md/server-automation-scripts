@@ -25,7 +25,7 @@ function Test-WebsiteHealth {
 
     $ProgressPreference = 'SilentlyContinue'
 
-    Write-Host "Health check: $Url  (Attempts: $Attempts, Timeout/try: ${TimeoutSec}s)" -ForegroundColor Cyan
+    Write-Host "Health check: $Url  (Timeout / Attempt: ${TimeoutSec}s)" -ForegroundColor Cyan
     Write-Host "Header: $($Headers | ConvertTo-Json -Depth 3)"
 
     for ($i = 1; $i -le $Attempts; $i++) {
@@ -38,14 +38,14 @@ function Test-WebsiteHealth {
             }
 
             if ($response.StatusCode -eq 200) {
-                Write-Host "Health check - 200 OK on attempt ${i}" -ForegroundColor Green
-                return $true
+                Write-Host "Health check OK" -ForegroundColor Green
+                return
             } else {
-                Write-Host "Attempt ${i} -> HTTP $($response.StatusCode) - retrying" -ForegroundColor Yellow
+                Write-Host "Attempt $($i.ToString("000")) / ${Attempts} -> HTTP $($response.StatusCode) - retrying" -ForegroundColor Yellow
             }
         }
         catch {
-            Write-Host "Attempt ${i} -> no response - retrying" -ForegroundColor DarkYellow
+            Write-Host "Attempt $($i.ToString("000")) / ${Attempts} -> no response - retrying" -ForegroundColor DarkYellow
         }
         Start-Sleep -Seconds $PauseSec
     }

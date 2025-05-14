@@ -1,8 +1,13 @@
 {
+  "wacs": {
+    "path": "C:\\Program Files\\Win-Acme\\wacs.exe",
+    "emailAddress": "rotaru.i.florin@outlook.com"
+  },
   "green": {
-    "port": 8081
+    "httpPort": 8001
+    
   },
   "blue": {
-    "port": 8082
+    "httpPort": 8002
   }
 }

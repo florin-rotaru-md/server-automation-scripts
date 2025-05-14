@@ -52,6 +52,14 @@ Install-Application `
     -InstallerPath "$tempInstallerPath\vc_redist.x64.exe" `
 	-InstallArgs "/install /quiet /norestart"
 
+# https://slproweb.com/products/Win32OpenSSL.html
+# Install OpenSSL
+Install-Application -AppName "OpenSSL" `
+    -AppExecutablePath "C:\Program Files\OpenSSL-Win64\bin" `
+    -InstallerUrl "https://slproweb.com/download/Win64OpenSSL-3_5_0.msi" `
+    -InstallerPath "$tempInstallerPath/Win64OpenSSL-3_5_0.msi" `
+    -InstallArgs "/quiet /norestart"
+
 # Install .NET 8 Hosting Bundle
 Install-Application -AppName ".NET 8 Hosting Bundle" `
     -AppExecutablePath  "C:\Program Files\IIS\Asp.Net Core Module\V2" `
@@ -119,7 +127,6 @@ if (!(Test-Path $winAcmeDestinationFolder)) {
 } Else {
     Write-Host "Win-Acme is already installed."
 }
-
 
 $pgInstallArgs = @(
     "--mode", "unattended",

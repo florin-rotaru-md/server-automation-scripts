@@ -5,4 +5,4 @@ Deploy-DotNetWebsite `
   -RepoBranch "develop" `
   -RepoToken "ghp_***" `
   -ProjectPath "Apps/Events/Events.Server/Events.Server.csproj" `
-  -WebSiteName "api.waa.ro" 
+  -HostName "api.waa.ro" 

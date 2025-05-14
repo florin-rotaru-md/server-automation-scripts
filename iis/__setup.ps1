@@ -77,9 +77,9 @@ if ((Test-Path $modSecConfPath) -and !(Test-Path "${modSecConfPath}.backup")) {
     #     New-Item -Path "C:\Program Files\ModSecurity IIS\coreruleset"
     # }
 
-    Copy-Item "$tmpCoreRuleSetPath" -Destination "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force
+    Copy-Item -Path "$tmpCoreRuleSetPath" -Destination "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force
 
-    Write-Host "$tmpCoreRuleSetPath\* to C:\Program Files\ModSecurity IIS\coreruleset"
+    Write-Host "$tmpCoreRuleSetPath to C:\Program Files\ModSecurity IIS\coreruleset"
 
     Copy-Item -Path $modSecConfPath -Destination "$modSecConfPath.backup"
     Set-Content -Path $modSecConfPath -Value @"

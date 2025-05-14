@@ -4,15 +4,29 @@ function Deploy-DotNetWebsite {
         [string]$RepoBranch = "main",
         [string]$RepoToken = "ghp_***",
         [string]$ProjectPath = "App/App.csproj",
-        [string]$WebSiteName = "demo.com"
+        [string]$HostName = "demo.com"
     )
-
+    <#
+        .SYNOPSIS
+            Deploys a .NET website to IIS.
+        .DESCRIPTION
+            This script deploys a .NET website to IIS by cloning the repository, building the project, and publishing it to the specified path.
+        .PARAMETER RepoUrl
+            The URL of the Git repository.
+        .PARAMETER RepoBranch
+            The branch of the repository to clone.
+        .PARAMETER RepoToken
+            The GitHub token for authentication.
+        .PARAMETER ProjectPath
+            The path to the .NET project file.
+        .PARAMETER HostName
+            The host name used in bindings (e.g., yoursite.com).
+    #>
+    
     $ErrorActionPreference = "Stop"
 
     . ".\Confirm-Paths.ps1"
-    . ".\Confirm-WebSite.ps1"
     . ".\Get-Repo.ps1"
-    . ".\Remove-DirectoryContents.ps1"
     . ".\Remove-ReferencePathAndOlderDirectories.ps1"
     . ".\Switch-ToInactiveWebsiteSlot.ps1"
 
@@ -20,18 +34,16 @@ function Deploy-DotNetWebsite {
         Import-Module WebAdministration -ErrorAction Stop
     }
 
-    $config = Get-Content ".\Config.json" | ConvertFrom-Json
-
     $deployHash = [guid]::NewGuid().ToString().Split('-')[0]
     $repoName = ($RepoUrl -replace "\.git$", "").Split("/")[-1]
 
     $buildRoot = "C:\repos\$repoName"
     $buildSourcePath = "$buildRoot\git\$RepoBranch"
-    $buildPublishPath = "$buildRoot\publish\$RepoBranch\$WebSiteName\$deployHash"
+    $buildPublishPath = "$buildRoot\publish\$RepoBranch\$HostName\$deployHash"
 
-    $WebSiteNamesRootPath = "C:\inetpub\sites\$WebSiteName"
-    $blueWebSitePath = "$WebSiteNamesRootPath\blue\$deployHash"
-    $greenWebSitePath = "$WebSiteNamesRootPath\green\$deployHash"
+    $webSitesRootPath = "C:\inetpub\webSites\$HostName"
+    $blueWebSitePath = "$webSitesRootPath\blue\$deployHash"
+    $greenWebSitePath = "$webSitesRootPath\green\$deployHash"
 
     Write-Host "Confirm - repo: $repoName, branch: $RepoBranch - build paths" -ForegroundColor Green
     Confirm-Paths -Paths @($buildSourcePath, $buildPublishPath)
@@ -47,32 +59,12 @@ function Deploy-DotNetWebsite {
     Write-Host "dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true"
     dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true
 
-    Write-Host "Confirm - ${WebSiteName}_green - WebSite"
-    Confirm-WebSite -SiteName "${WebSiteName}_green" `
-        -Port $config.green.port `
-        -HostHeader $WebSiteName `
-        -PhysicalPath $greenWebSitePath 
-    
-    Write-Host "Confirm - ${WebSiteName}_blue - WebSite"
-    Confirm-WebSite -SiteName "${WebSiteName}_blue" `
-        -Port $config.blue.port `
-        -HostHeader $WebSiteName `
-        -PhysicalPath $blueWebSitePath 
-
-    $tempCompressedFiles = "C:\inetpub\temp\IIS Temporary Compressed Files"
-
-    Confirm-Paths -Paths @("$tempCompressedFiles\${WebSiteName}_green", "$tempCompressedFiles\${WebSiteName}_blue")
-    icacls "$tempCompressedFiles" /grant IIS_IUSRS:F
-
-    $slotInfo = Switch-ToInactiveWebsiteSlot `
-        -WebSiteName $WebSiteName `
+    Switch-ToInactiveWebsiteSlot `
+        -HostName $HostName `
         -BlueWebSitePath $blueWebSitePath `
         -GreenWebSitePath $greenWebSitePath `
         -BuildPublishPath $buildPublishPath 
 
     Write-Host "Remove - current and older published versions $buildPublishPath" -ForegroundColor Green
     Remove-ReferencePathAndOlderDirectories -Path (Get-Item $buildPublishPath).Parent.FullName -ReferencePath $buildPublishPath
-
-    Write-Host "Remove - non active WebSite versions of $($slotInfo.InactiveWebSiteName)" -ForegroundColor Green
-    Remove-DirectoryContents -Directory (Get-Item $slotInfo.InactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $slotInfo.InactiveWebSitePath).Name)
 }
