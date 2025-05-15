@@ -128,6 +128,20 @@ if (!(Test-Path $winAcmeDestinationFolder)) {
     Write-Host "Win-Acme is already installed."
 }
 
+$winAcmePluginDestinationFolder = "C:\Program Files\Win-Acme\plugin.validation.dns.cloudflare.v2.2.9.1701"
+if (!(Test-Path $winAcmePluginDestinationFolder)) {
+    New-Item -ItemType Directory -Path $winAcmePluginDestinationFolder
+
+    $winAcmePluginUrl = "https://github.com/win-acme/win-acme/releases/download/v2.2.9.1701/plugin.validation.dns.cloudflare.v2.2.9.1701.zip"
+    $winAcmePluginZipFilePath = "$winAcmePluginDestinationFolder\plugin.validation.dns.cloudflare.v2.2.9.1701.zip"
+    Invoke-WebRequest -Uri $winAcmePluginUrl -OutFile $winAcmePluginZipFilePath
+    Expand-Archive -Path $winAcmePluginZipFilePath -DestinationPath $winAcmePluginDestinationFolder -Force
+    Remove-Item $winAcmePluginZipFilePath -Force
+    Write-Host "Win-Acme plugin.validation.dns.cloudflare has been installed."
+} Else {
+    Write-Host "Win-Acme plugin.validation.dns.cloudflare is already installed."
+}
+
 $pgInstallArgs = @(
     "--mode", "unattended",
     "--superpassword", "postgres",

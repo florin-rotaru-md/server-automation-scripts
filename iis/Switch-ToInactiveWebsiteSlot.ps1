@@ -20,8 +20,8 @@ function Switch-ToInactiveWebsiteSlot {
             HTTP port for the blue slot site.
         .PARAMETER WacsValidationMethod
             Validation method for Let's Encrypt certificate (e.g., http-01, cloudflare-dns).
-        .PARAMETER WacsArgsCloudflarecredentials
-            Cloudflare credentials file path for DNS validation (if applicable).
+        .PARAMETER WacsArgsCloudflareTokenPath
+            Cloudflare token file path for DNS validation (if applicable).
         .PARAMETER WacsArgsEmailAddress
             Email address for Let's Encrypt notifications.
     #>
@@ -34,8 +34,8 @@ function Switch-ToInactiveWebsiteSlot {
         [int]$BlueHttpPort,
         [ValidateSet("http-01", "cloudflare-dns")]
         [string]$WacsValidationMethod,
-        [string]$WacsArgsEmailAddress,
-        [string]$WacsArgsCloudflarecredentials
+        [string]$WacsArgsCloudflareTokenPath,
+        [string]$WacsArgsEmailAddress
         #[scriptblock]$ConfirmPathsCallback
     )
 
@@ -165,7 +165,7 @@ function Switch-ToInactiveWebsiteSlot {
         $thumbprint = $cert.Thumbprint
     }
     else {
-        Write-Host "Requesting new certificate for $HostName"
+        Write-Host "Requesting new certificate for $HostName using $WacsValidationMethod" -ForegroundColor Green
 
         switch ($WacsValidationMethod) {
             "http-01" {
@@ -177,7 +177,7 @@ function Switch-ToInactiveWebsiteSlot {
             "cloudflare-dns" { 
                 $thumbprint = Request-CloudflareDns01LetsEncryptCertificate `
                     -Hostname $HostName `
-                    -WacsArgsCloudflarecredentials $WacsArgsCloudflarecredentials `
+                    -WacsArgsCloudflareTokenPath $WacsArgsCloudflareTokenPath `
                     -WacsArgsEmailAddress $WacsArgsEmailAddress
             }
             Default { throw "Invalid WacsValidationMethod: $WacsValidationMethod" }

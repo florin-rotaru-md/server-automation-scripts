@@ -8,7 +8,7 @@ function Deploy-DotNetWebsite {
         [int]$GreenHttpPort = 8001,
 		[int]$BlueHttpPort = 8002,
         [string]$WacsValidationMethod = "cloudflare-dns",
-        [string]$WacsArgsCloudflarecredentials = "C:\Program Files\Win-Acme\Tokens\clooudflare-global-api-key.txt",
+        [string]$WacsArgsCloudflareTokenPath = "C:\Program Files\Win-Acme\Tokens\clooudflare-zone-dns-demo.com.txt",
         [string]$WacsArgsEmailAddress = "rotaru.i.florin@outlook.com"
     )
     <#
@@ -86,7 +86,7 @@ function Deploy-DotNetWebsite {
         -GreenHttpPort $GreenHttpPort `
         -BlueHttpPort $BlueHttpPort `
         -WacsValidationMethod $WacsValidationMethod `
-        -WacsArgsCloudflarecredentials $WacsArgsCloudflarecredentials `
+        -WacsArgsCloudflareTokenPath $WacsArgsCloudflareTokenPath `
         -WacsArgsEmailAddress $WacsArgsEmailAddress
 
     Write-Host "Remove - current and older published versions $buildPublishPath" -ForegroundColor Green

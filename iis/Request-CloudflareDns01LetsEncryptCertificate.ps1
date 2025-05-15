@@ -1,7 +1,7 @@
 function Request-CloudflareDns01LetsEncryptCertificate {
     param(
         [string]$HostName,
-        [string]$WacsArgsCloudflarecredentials,
+        [string]$WacsArgsCloudflareTokenPath,
         [string]$WacsArgsEmailAddress
     )
 
@@ -18,23 +18,32 @@ function Request-CloudflareDns01LetsEncryptCertificate {
         }
     }
 
-    if (-not (Test-Path $WacsArgsCloudflarecredentials)) {
-        Write-Error "Cloudflare token file not found at '$WacsArgsCloudflarecredentials'"
+    if (-not (Test-Path $WacsArgsCloudflareTokenPath)) {
+        Write-Error "Cloudflare token file not found at '$WacsArgsCloudflareTokenPath'"
         return
     }
 
+    $cloudflareApiToken = Get-Content -Path $WacsArgsCloudflareTokenPath -Raw
+
+    $settingsDefaultJsonPath = "C:\Program Files\Win-Acme\settings_default.json"
+    $settingsDefaultContent = Get-Content -Path $settingsDefaultJsonPath -Raw | ConvertFrom-Json
+    $settingsDefaultContent.Validation.DnsServers = @("1.1.1.1", "1.0.0.1")
+    $newSettingsDefaultJsonContent = $settingsDefaultContent | ConvertTo-Json -Depth 10
+
+    Set-Content -Path $settingsDefaultJsonPath -Value $newSettingsDefaultJsonContent -Encoding UTF8
+
     $arguments = @(
         "--installation none"
-        "--target manual"
+        "--source manual"
         "--host $HostName"
-        "--validation dns-01"
-        "--validationmode dns-01"
+        "--validation cloudflare"
+        "--cloudflareapitoken $cloudflareApiToken"
+        #"--validationmode dns-01"
         "--store certificatestore"
         "--certificatestore My"
-        "--plugin validation.dns.cloudflare"
-        "--pluginargs tokenFile=$WacsArgsCloudflarecredentials"
         "--accepttos"
-        "--WacsArgsEmailAddress $WacsArgsEmailAddress"
+        "--emailaddress $WacsArgsEmailAddress"
+        # "--nocache"
         # "--test"
         # "--verbose"
     ) -join " "
