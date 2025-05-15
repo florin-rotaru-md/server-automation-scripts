@@ -2,7 +2,9 @@ function Confirm-WebSite {
 	param (
 		[string]$WebSiteName,
 		[string]$HostName,
-		[string]$PhysicalPath
+		[string]$PhysicalPath,
+		[int]$GreenHttpPort,
+		[int]$BlueHttpPort
 	)
 	<#
 	.SYNOPSIS
@@ -15,22 +17,23 @@ function Confirm-WebSite {
 		The host name used in bindings (e.g., yoursite.com).
 	.PARAMETER PhysicalPath
 		The physical path to the website's content.	
+	.PARAMETER GreenHttpPort
+		The HTTP port for the green slot site.
+	.PARAMETER BlueHttpPort
+		The HTTP port for the blue slot site.
 	.EXAMPLE
 		Confirm-WebSite -WebSiteName "MyWebsite" -HostName "www.example.com" -PhysicalPath "C:\inetpub\wwwroot\MyWebsite"
 	#>
 
-	. ".\Confirm-Paths.ps1"
-	
 	$httpPort = 0
-
-	$config = Get-Content ".\Config.json" | ConvertFrom-Json
+	
 	if ($WebSiteName -match "_(green|blue)$") {
 		$webSiteEnding = $matches[1]
 		if ($webSiteEnding -eq "green") {
-			$httpPort = $config.green.httpPort
+			$httpPort = $GreenHttpPort
 		}
 		else {
-			$httpPort = $config.blue.httpPort
+			$httpPort = $BlueHttpPort
 		} 
 	}
 	else {
@@ -63,7 +66,7 @@ function Confirm-WebSite {
 		Add-WebSite
 		return
 	}
- 	else {
+	else {
 		Write-Host "IIS site '$WebSiteName' already exists. Checking bindings..."
 		$webSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:${httpPort}:$HostName" } | Select-Object -First 1
 		if (!$webSiteBindingInfo) {

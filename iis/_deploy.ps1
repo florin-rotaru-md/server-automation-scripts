@@ -2,7 +2,13 @@
 
 Deploy-DotNetWebsite `
   -RepoUrl "https://github.com/florin-rotaru-md/Statics.git" `
-  -RepoBranch "develop" `
+  -RepoBranch "master" `
   -RepoToken "ghp_***" `
-  -ProjectPath "Apps/Events/Events.Server/Events.Server.csproj" `
-  -HostName "api.waa.ro" 
+  -ProjectPath "Apps/Waa/Waa.Server/Waa.Server.csproj" `
+  -HostName "api.waa.ro" `
+  -GreenHttpPort 8001 `
+  -BlueHttpPort 8002 `
+  -WacsValidationMethod "cloudflare-dns" `
+  -WacsArgsCloudflarecredentials "C:\Program Files\Win-Acme\Tokens\clooudflare-global-api-key.txt" `
+  -WacsArgsEmailAddress "rotaru.i.florin@outlook.com" `
+

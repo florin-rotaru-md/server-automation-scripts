@@ -4,7 +4,12 @@ function Deploy-DotNetWebsite {
         [string]$RepoBranch = "main",
         [string]$RepoToken = "ghp_***",
         [string]$ProjectPath = "App/App.csproj",
-        [string]$HostName = "demo.com"
+        [string]$HostName = "demo.com",
+        [int]$GreenHttpPort = 8001,
+		[int]$BlueHttpPort = 8002,
+        [string]$WacsValidationMethod = "cloudflare-dns",
+        [string]$WacsArgsCloudflarecredentials = "C:\Program Files\Win-Acme\Tokens\clooudflare-global-api-key.txt",
+        [string]$WacsArgsEmailAddress = "rotaru.i.florin@outlook.com"
     )
     <#
         .SYNOPSIS
@@ -21,9 +26,23 @@ function Deploy-DotNetWebsite {
             The path to the .NET project file.
         .PARAMETER HostName
             The host name used in bindings (e.g., yoursite.com).
+        .PARAMETER GreenHttpPort
+            The HTTP port for the green slot site.
+        .PARAMETER BlueHttpPort
+            The HTTP port for the blue slot site.
+        .PARAMETER WacsValidationMethod
+            The validation method for Let's Encrypt certificate (e.g., http-01, cloudflare-dns).
+        .PARAMETER WacsArgsCloudflarecredentials
+            The Cloudflare credentials file path for DNS validation (if applicable).
+        .PARAMETER WacsArgsEmailAddress
+            The email address for Let's Encrypt notifications.
     #>
     
     $ErrorActionPreference = "Stop"
+
+    if ($GreenHttpPort -eq $BlueHttpPort) {
+        throw "GreenHttpPort and BlueHttpPort must be different."
+    }
 
     . ".\Confirm-Paths.ps1"
     . ".\Get-Repo.ps1"
@@ -63,7 +82,12 @@ function Deploy-DotNetWebsite {
         -HostName $HostName `
         -BlueWebSitePath $blueWebSitePath `
         -GreenWebSitePath $greenWebSitePath `
-        -BuildPublishPath $buildPublishPath 
+        -BuildPublishPath $buildPublishPath `
+        -GreenHttpPort $GreenHttpPort `
+        -BlueHttpPort $BlueHttpPort `
+        -WacsValidationMethod $WacsValidationMethod `
+        -WacsArgsCloudflarecredentials $WacsArgsCloudflarecredentials `
+        -WacsArgsEmailAddress $WacsArgsEmailAddress
 
     Write-Host "Remove - current and older published versions $buildPublishPath" -ForegroundColor Green
     Remove-ReferencePathAndOlderDirectories -Path (Get-Item $buildPublishPath).Parent.FullName -ReferencePath $buildPublishPath

@@ -14,14 +14,28 @@ function Switch-ToInactiveWebsiteSlot {
             Physical path for the green slot site.
         .PARAMETER BuildPublishPath
             Path to the output of the dotnet publish.
-        .PARAMETER ConfirmPathsCallback
-            ScriptBlock to confirm directory path validity (e.g., Confirm-Paths -Paths <...>).
+        .PARAMETER GreenHttpPort
+            HTTP port for the green slot site.
+        .PARAMETER BlueHttpPort
+            HTTP port for the blue slot site.
+        .PARAMETER WacsValidationMethod
+            Validation method for Let's Encrypt certificate (e.g., http-01, cloudflare-dns).
+        .PARAMETER WacsArgsCloudflarecredentials
+            Cloudflare credentials file path for DNS validation (if applicable).
+        .PARAMETER WacsArgsEmailAddress
+            Email address for Let's Encrypt notifications.
     #>
     param (
         [string]$HostName,
         [string]$BlueWebSitePath,
         [string]$GreenWebSitePath,
-        [string]$BuildPublishPath
+        [string]$BuildPublishPath,
+        [int]$GreenHttpPort,
+        [int]$BlueHttpPort,
+        [ValidateSet("http-01", "cloudflare-dns")]
+        [string]$WacsValidationMethod,
+        [string]$WacsArgsEmailAddress,
+        [string]$WacsArgsCloudflarecredentials
         #[scriptblock]$ConfirmPathsCallback
     )
 
@@ -30,11 +44,11 @@ function Switch-ToInactiveWebsiteSlot {
     . ".\Confirm-WebSite.ps1"
     . ".\Get-ExistingLetsEncryptCertificate.ps1"
     . ".\Remove-DirectoryContents.ps1"
-    . ".\Request-LetsEncryptCertificate.ps1"
+    . ".\Request-CloudflareDns01LetsEncryptCertificate.ps1"
+    . ".\Request-Http01LetsEncryptCertificate.ps1"
     . ".\Set-LetsEncryptCertificateToIIS.ps1"
     . ".\Test-WebsiteHealth.ps1"
 
-    $config = Get-Content ".\Config.json" | ConvertFrom-Json
     $inactiveWebSiteName = $null
     $inactiveWebSitePath = $null
     $inactiveWebSiteHttpPort = 0
@@ -42,12 +56,16 @@ function Switch-ToInactiveWebsiteSlot {
     Write-Host "Confirm - $HostName on ${HostName}_green - WebSite"
     Confirm-WebSite -WebSiteName "${HostName}_green" `
         -HostName $HostName `
-        -PhysicalPath $GreenWebSitePath 
+        -PhysicalPath $GreenWebSitePath `
+        -GreenHttpPort $GreenHttpPort `
+        -BlueHttpPort $BlueHttpPort
     
     Write-Host "Confirm - $HostName on ${HostName}_blue - WebSite"
     Confirm-WebSite -WebSiteName "${HostName}_blue" `
         -HostName $HostName `
-        -PhysicalPath $BlueWebSitePath 
+        -PhysicalPath $BlueWebSitePath `
+        -GreenHttpPort $GreenHttpPort `
+        -BlueHttpPort $BlueHttpPort
 
     $tempCompressedFiles = "C:\inetpub\temp\IIS Temporary Compressed Files"
 
@@ -66,8 +84,8 @@ function Switch-ToInactiveWebsiteSlot {
     }
 
     if (!$bindingInfo) {
-        Write-Host "Trying to get *:$($config.blue.httpPort):$HostName binding..."
-        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:$($config.blue.httpPort):$HostName" } | Select-Object -First 1
+        Write-Host "Trying to get *:${BlueHttpPort}:$HostName binding..."
+        $bindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:${BlueHttpPort}:$HostName" } | Select-Object -First 1
     }
 
     $activeWebSiteName = $bindingInfo.ItemXPath -replace ".*name='([^']+)'.*", '$1'
@@ -81,12 +99,12 @@ function Switch-ToInactiveWebsiteSlot {
     if ($activeWebSiteName -eq "${HostName}_blue") {
         $inactiveWebSiteName = "${HostName}_green"
         $inactiveWebSitePath = $GreenWebSitePath
-        $inactiveWebSiteHttpPort = $config.green.httpPort
+        $inactiveWebSiteHttpPort = $GreenHttpPort
     }
     else {
         $inactiveWebSiteName = "${HostName}_blue"
         $inactiveWebSitePath = $BlueWebSitePath
-        $inactiveWebSiteHttpPort = $config.blue.httpPort
+        $inactiveWebSiteHttpPort = $BlueHttpPort
     }
 
     # # Confirm path is valid (optional validation callback)
@@ -109,7 +127,7 @@ function Switch-ToInactiveWebsiteSlot {
 
     # Copy build output
     Write-Host "Copying published files to $inactiveWebSitePath..."
-    Copy-Item "$BuildPublishPath" "$inactiveWebSitePath" -Recurse -Force
+    Copy-Item -Path "${BuildPublishPath}\*" -Destination "$inactiveWebSitePath" -Recurse -Force
 
     # Update site path explicitly (IIS metadata update)
     Set-ItemProperty "IIS:\\Sites\\$inactiveWebSiteName" -Name physicalPath -Value $inactiveWebSitePath
@@ -148,9 +166,22 @@ function Switch-ToInactiveWebsiteSlot {
     }
     else {
         Write-Host "Requesting new certificate for $HostName"
-        $thumbprint = Request-LetsEncryptCertificate -Hostname $HostName `
-            -WebRoot "$inactiveWebSitePath" `
-    
+
+        switch ($WacsValidationMethod) {
+            "http-01" {
+                $thumbprint = Request-Http01LetsEncryptCertificate `
+                    -Hostname $HostName `
+                    -WebRoot "$inactiveWebSitePath" `
+                    -WacsArgsEmailAddress $WacsArgsEmailAddress
+            }
+            "cloudflare-dns" { 
+                $thumbprint = Request-CloudflareDns01LetsEncryptCertificate `
+                    -Hostname $HostName `
+                    -WacsArgsCloudflarecredentials $WacsArgsCloudflarecredentials `
+                    -WacsArgsEmailAddress $WacsArgsEmailAddress
+            }
+            Default { throw "Invalid WacsValidationMethod: $WacsValidationMethod" }
+        }  
     }
 
     Set-LetsEncryptCertificateToIIS -WebSiteName $inactiveWebSiteName `
