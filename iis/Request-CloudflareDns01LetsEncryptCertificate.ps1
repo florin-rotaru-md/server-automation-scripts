@@ -1,6 +1,7 @@
 function Request-CloudflareDns01LetsEncryptCertificate {
     param(
         [string]$HostName,
+        [string]$CCSConfigFile,
         [string]$WacsArgsCloudflareTokenPath,
         [string]$WacsArgsEmailAddress
     )
@@ -32,15 +33,32 @@ function Request-CloudflareDns01LetsEncryptCertificate {
 
     Set-Content -Path $settingsDefaultJsonPath -Value $newSettingsDefaultJsonContent -Encoding UTF8
 
+    # $arguments = @(
+    #     "--installation none"
+    #     "--source iis"
+    #     "--host $HostName"
+    #     "--validation cloudflare"
+    #     "--cloudflareapitoken $cloudflareApiToken"
+    #     "--store certificatestore"
+    #     "--certificatestore My"
+    #     "--accepttos"
+    #     "--emailaddress $WacsArgsEmailAddress"
+    #     # "--nocache"
+    #     # "--test"
+    #     # "--verbose"
+    # ) -join " "
+
+    $ccsConfig = Get-Content -Path $CCSConfigFile | ConvertFrom-Json
+ 
     $arguments = @(
         "--installation none"
         "--source manual"
         "--host $HostName"
         "--validation cloudflare"
-        "--cloudflareapitoken $cloudflareApiToken"
-        #"--validationmode dns-01"
-        "--store certificatestore"
-        "--certificatestore My"
+        "--cloudflareapitoken $cloudflareApiToken" 
+        "--store centralssl"
+        "--centralsslstore $($ccsConfig.physicalPath)"
+        "--pfxpassword """"" 
         "--accepttos"
         "--emailaddress $WacsArgsEmailAddress"
         # "--nocache"
@@ -49,14 +67,4 @@ function Request-CloudflareDns01LetsEncryptCertificate {
     ) -join " "
 
     Start-Process -FilePath $wacsPath -ArgumentList $arguments -Wait -NoNewWindow
-
-    Start-Sleep -Seconds 5
-
-    $cert = Get-ExistingLetsEncryptCertificate -HostName $HostName -MinimumDaysValid 0
-    if ($cert) {
-        Write-Host "Certificate obtained: $($cert.Thumbprint)"
-        return $cert.Thumbprint
-    }
-
-    throw "Failed to get certificate for $HostName"
 }

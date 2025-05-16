@@ -18,6 +18,8 @@ function Switch-ToInactiveWebsiteSlot {
             HTTP port for the green slot site.
         .PARAMETER BlueHttpPort
             HTTP port for the blue slot site.
+        .PARAMETER CCSConfigFile
+            Path to the Central Certificate Store configuration file.
         .PARAMETER WacsValidationMethod
             Validation method for Let's Encrypt certificate (e.g., http-01, cloudflare-dns).
         .PARAMETER WacsArgsCloudflareTokenPath
@@ -32,6 +34,7 @@ function Switch-ToInactiveWebsiteSlot {
         [string]$BuildPublishPath,
         [int]$GreenHttpPort,
         [int]$BlueHttpPort,
+        [string]$CCSConfigFile,
         [ValidateSet("http-01", "cloudflare-dns")]
         [string]$WacsValidationMethod,
         [string]$WacsArgsCloudflareTokenPath,
@@ -46,7 +49,9 @@ function Switch-ToInactiveWebsiteSlot {
     . ".\Remove-DirectoryContents.ps1"
     . ".\Request-CloudflareDns01LetsEncryptCertificate.ps1"
     . ".\Request-Http01LetsEncryptCertificate.ps1"
+    . ".\Set-HostSslSniBind.ps1"
     . ".\Set-LetsEncryptCertificateToIIS.ps1"
+    . ".\Test-CertificateExists.ps1"
     . ".\Test-WebsiteHealth.ps1"
 
     $inactiveWebSiteName = $null
@@ -107,11 +112,6 @@ function Switch-ToInactiveWebsiteSlot {
         $inactiveWebSiteHttpPort = $BlueHttpPort
     }
 
-    # # Confirm path is valid (optional validation callback)
-    # if ($ConfirmPathsCallback) {
-    #     $ConfirmPathsCallback.Invoke($inactiveWebSitePath)
-    # }
-
     Write-Host "Active Site: $activeWebSiteName, Deploying to inactive site: $inactiveWebSiteName at $inactiveWebSitePath" -ForegroundColor Green
 
     # Stop AppPool if needed
@@ -158,36 +158,60 @@ function Switch-ToInactiveWebsiteSlot {
         -TimeoutSec 1 `
         -PauseSec 3
 
-    $cert = Get-ExistingLetsEncryptCertificate -HostName $HostName -MinimumDaysValid 3
-    $thumbprint = $null
-    if ($cert) {
-        Write-Host "Valid cert exists for $HostName (expires: $($cert.NotAfter))"
-        $thumbprint = $cert.Thumbprint
-    }
-    else {
-        Write-Host "Requesting new certificate for $HostName using $WacsValidationMethod" -ForegroundColor Green
-
+    $certExists = Test-CertificateExists -HostName $HostName -CCSConfigFile $CCSConfigFile
+    if (!$certExists) {
         switch ($WacsValidationMethod) {
             "http-01" {
-                $thumbprint = Request-Http01LetsEncryptCertificate `
+                Request-Http01LetsEncryptCertificate `
                     -Hostname $HostName `
+                    -CCSConfigFile $CCSConfigFile `
                     -WebRoot "$inactiveWebSitePath" `
                     -WacsArgsEmailAddress $WacsArgsEmailAddress
             }
             "cloudflare-dns" { 
-                $thumbprint = Request-CloudflareDns01LetsEncryptCertificate `
+                Request-CloudflareDns01LetsEncryptCertificate `
                     -Hostname $HostName `
+                    -CCSConfigFile $CCSConfigFile `
                     -WacsArgsCloudflareTokenPath $WacsArgsCloudflareTokenPath `
                     -WacsArgsEmailAddress $WacsArgsEmailAddress
             }
             Default { throw "Invalid WacsValidationMethod: $WacsValidationMethod" }
-        }  
+        }        
     }
 
-    Set-LetsEncryptCertificateToIIS -WebSiteName $inactiveWebSiteName `
+    Set-HostSslSniBind -WebSiteName $inactiveWebSiteName `
         -HostName $HostName `
-        -Thumbprint $thumbprint `
-        -HttpsPort 443
+
+    # $cert = Get-ExistingLetsEncryptCertificate -HostName $HostName -MinimumDaysValid 3
+    # $thumbprint = $null
+    # if ($cert) {
+    #     Write-Host "Valid cert exists for $HostName (expires: $($cert.NotAfter))"
+    #     $thumbprint = $cert.Thumbprint
+    # }
+    # else {
+    #     Write-Host "Requesting new certificate for $HostName using $WacsValidationMethod" -ForegroundColor Green
+
+    #     switch ($WacsValidationMethod) {
+    #         "http-01" {
+    #             $thumbprint = Request-Http01LetsEncryptCertificate `
+    #                 -Hostname $HostName `
+    #                 -WebRoot "$inactiveWebSitePath" `
+    #                 -WacsArgsEmailAddress $WacsArgsEmailAddress
+    #         }
+    #         "cloudflare-dns" { 
+    #             $thumbprint = Request-CloudflareDns01LetsEncryptCertificate `
+    #                 -Hostname $HostName `
+    #                 -WacsArgsCloudflareTokenPath $WacsArgsCloudflareTokenPath `
+    #                 -WacsArgsEmailAddress $WacsArgsEmailAddress
+    #         }
+    #         Default { throw "Invalid WacsValidationMethod: $WacsValidationMethod" }
+    #     }  
+    # }
+
+    # Set-LetsEncryptCertificateToIIS -WebSiteName $inactiveWebSiteName `
+    #     -HostName $HostName `
+    #     -Thumbprint $thumbprint `
+    #     -HttpsPort 443
 
     Write-Host "Remove - non active WebSite versions of $inactiveWebSiteName" -ForegroundColor Green
     Remove-DirectoryContents -Directory (Get-Item $inactiveWebSitePath).Parent.FullName -ExcludeNames @((Get-Item $inactiveWebSitePath).Name)

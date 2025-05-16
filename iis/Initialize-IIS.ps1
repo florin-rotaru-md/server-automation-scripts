@@ -1,8 +1,10 @@
 function Initialize-IIS {
     param (
-        [bool]$UseModSecurity = $false
+        [bool]$UseModSecurity = $false,
+        [string]$CCSConfigFile = "C:\config\ccs.json"
     )
 
+    . ".\Enable-IISCentralCertStore.ps1"
     . ".\Install-Application.ps1"
     . ".\Set-RegistryPropertyIfExists.ps1"
     . ".\Write-CrsRecommendedConfig.ps1"
@@ -40,12 +42,13 @@ function Initialize-IIS {
         -InstallerPath "$tempInstallerPath\requestRouter_x64.msi" `
         -InstallArgs "/quiet /norestart"
 
-
     Write-Host "Enabling ARR proxy settings..."
     Import-Module WebAdministration
 
     Set-WebConfigurationProperty -Filter "system.webServer/proxy" -Name "enabled" -Value "True" -PSPath "IIS:\"
     Set-WebConfigurationProperty -Filter "system.webServer/proxy" -Name "preserveHostHeader" -Value "True" -PSPath "IIS:\"
+
+    Enable-IISCentralCertStore -CCSConfigFile $CCSConfigFile
 
     if ($UseModSecurity) {
         Write-Host "Enabling ModSecurity..."
@@ -89,7 +92,7 @@ function Initialize-IIS {
             #     New-Item -Path "C:\Program Files\ModSecurity IIS\coreruleset"
             # }
 
-            Copy-Item -Path "$tmpCoreRuleSetPath" -Destination "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force
+            Copy-Item -Path $tmpCoreRuleSetPath -Destination "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force
 
             Write-Host "$tmpCoreRuleSetPath to C:\Program Files\ModSecurity IIS\coreruleset"
 

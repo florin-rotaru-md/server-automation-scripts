@@ -4,6 +4,8 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
+$ProgressPreference = 'SilentlyContinue'
+
 function Install-WindowsFeatureIfNeeded {
     param (
         [string]$FeatureName
@@ -37,7 +39,9 @@ $features = @(
     "Web-App-Dev",
     "Web-ISAPI-Ext",
     "Web-ISAPI-Filter",
-    "Web-Dyn-Compression"
+    "Web-Dyn-Compression",
+    "Web-CertProvider"
+	
 )
 foreach ($feature in $features) {
     Install-WindowsFeatureIfNeeded -FeatureName $feature

@@ -25,6 +25,8 @@ function Confirm-WebSite {
 		Confirm-WebSite -WebSiteName "MyWebsite" -HostName "www.example.com" -PhysicalPath "C:\inetpub\wwwroot\MyWebsite"
 	#>
 
+	Import-Module WebAdministration
+
 	$httpPort = 0
 	
 	if ($WebSiteName -match "_(green|blue)$") {

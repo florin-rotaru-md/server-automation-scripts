@@ -7,8 +7,9 @@ function Deploy-DotNetWebsite {
         [string]$HostName = "demo.com",
         [int]$GreenHttpPort = 8001,
 		[int]$BlueHttpPort = 8002,
+        [string]$CCSConfigFile = "C:\config\ccs.json",
         [string]$WacsValidationMethod = "cloudflare-dns",
-        [string]$WacsArgsCloudflareTokenPath = "C:\Program Files\Win-Acme\Tokens\clooudflare-zone-dns-demo.com.txt",
+        [string]$WacsArgsCloudflareTokenPath = "C:\config\tokens\clooudflare-zone-dns-demo.com.txt",
         [string]$WacsArgsEmailAddress = "rotaru.i.florin@outlook.com"
     )
     <#
@@ -85,6 +86,7 @@ function Deploy-DotNetWebsite {
         -BuildPublishPath $buildPublishPath `
         -GreenHttpPort $GreenHttpPort `
         -BlueHttpPort $BlueHttpPort `
+        -CCSConfigFile $CCSConfigFile `
         -WacsValidationMethod $WacsValidationMethod `
         -WacsArgsCloudflareTokenPath $WacsArgsCloudflareTokenPath `
         -WacsArgsEmailAddress $WacsArgsEmailAddress

@@ -1,6 +1,7 @@
 function Request-Http01LetsEncryptCertificate {
     param (
         [string]$HostName,
+        [string]$CCSConfigFile,
         [string]$WebRoot,
         [string]$WacsArgsEmailAddress = ""
     )
@@ -39,29 +40,36 @@ function Request-Http01LetsEncryptCertificate {
         }
     }
 
+    # $arguments = @(
+    #     "--installation none"
+    #     "--target manual"
+    #     "--host $HostName"
+    #     "--validation filesystem"
+    #     "--webroot $WebRoot"
+    #     "--store certificatestore"
+    #     "--certificatestore My"
+    #     "--accepttos"
+    #     "--emailaddress $WacsArgsEmailAddress"
+    #     # "--test"
+    #     # "--verbose"
+    # ) -join " "
+
+    $ccsConfig = Get-Content -Path $CCSConfigFile | ConvertFrom-Json
+
     $arguments = @(
         "--installation none"
         "--target manual"
         "--host $HostName"
         "--validation filesystem"
         "--webroot $WebRoot"
-        "--store certificatestore"
-        "--certificatestore My"
+        "--store centralssl"
+        "--centralsslstore $($ccsConfig.physicalPath)"
+        "--pfxpassword """""
         "--accepttos"
         "--emailaddress $WacsArgsEmailAddress"
         # "--test"
         # "--verbose"
     ) -join " "
-    
+
     Start-Process -FilePath $wacsPath -ArgumentList $arguments -Wait -NoNewWindow
-
-    Start-Sleep -Seconds 5
-
-    $cert = Get-ExistingLetsEncryptCertificate -HostName $HostName -MinimumDaysValid 0
-    if ($cert) {
-        Write-Host "Certificate obtained: $($cert.Thumbprint)"
-        return $cert.Thumbprint
-    }
-
-    throw "Failed to get certificate for $HostName"
 }
