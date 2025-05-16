@@ -14,6 +14,8 @@ function Initialize-IIS {
 
     Write-Host "Setting up IIS..."
 
+    icacls "C:\inetpub" /grant "IIS_IUSRS:(OI)(CI)F"
+
     Remove-NonRequiredIISModules -UseModSecurity $UseModSecurity
 
     Write-Host "Disable Outdated protocols"
@@ -65,8 +67,6 @@ function Initialize-IIS {
         if ((Test-Path $modSecConfPath) -and !(Test-Path "${modSecConfPath}.backup")) {
             Write-Host "Creating ModSecurity log folder..."
             New-Item -ItemType Directory -Path "C:\inetpub\logs\modsec" -Force | Out-Null
-
-            icacls "C:\inetpub\logs\modsec\modsec_audit.log" /grant IIS_IUSRS:F
 
             if (Test-Path "C:\Program Files\ModSecurity IIS\coreruleset") {
                 Remove-Item -Path "C:\Program Files\ModSecurity IIS\coreruleset" -Recurse -Force

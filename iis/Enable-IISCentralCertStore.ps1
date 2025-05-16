@@ -24,7 +24,7 @@ function Enable-IISCentralCertStore {
         }
 
         # Grant IIS access
-        icacls $physicalPath /grant IIS_IUSRS:F
+        icacls $physicalPath /grant "IIS_IUSRS:(OI)(CI)F"
    
         $securePassword = $($ccsConfig.password) | ConvertTo-SecureString -AsPlainText -Force
         # $securePrivateKeyPassword = $($ccsConfig.privateKeyPassword) | ConvertTo-SecureString -AsPlainText -Force

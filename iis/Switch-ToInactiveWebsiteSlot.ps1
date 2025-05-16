@@ -75,8 +75,7 @@ function Switch-ToInactiveWebsiteSlot {
     $tempCompressedFiles = "C:\inetpub\temp\IIS Temporary Compressed Files"
 
     Confirm-Paths -Paths @("$tempCompressedFiles\${HostName}_green", "$tempCompressedFiles\${HostName}_blue")
-    icacls "$tempCompressedFiles" /grant IIS_IUSRS:F
-
+    
     Write-Host "Determining active / inactive WebSite slot..."
 
     # Get binding info
