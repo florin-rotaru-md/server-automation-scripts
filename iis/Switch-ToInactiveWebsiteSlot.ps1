@@ -126,8 +126,14 @@ function Switch-ToInactiveWebsiteSlot {
 
     # Copy build output
     Write-Host "Copying published files to $inactiveWebSitePath..."
-    Copy-Item -Path "${BuildPublishPath}\*" -Destination "$inactiveWebSitePath" -Recurse -Force
-
+    
+    # if (Test-Path $inactiveWebSitePath) {
+    #     Remove-Item -Path $inactiveWebSitePath -Recurse -Force
+    # }
+    
+    Copy-Item -Path $BuildPublishPath -Destination $inactiveWebSitePath -Recurse -Force
+    # Copy-Item -Path "$BuildPublishPath" -Destination (Get-Item $inactiveWebSitePath).Parent.FullName -Recurse -Force
+    
     # Update site path explicitly (IIS metadata update)
     Set-ItemProperty "IIS:\\Sites\\$inactiveWebSiteName" -Name physicalPath -Value $inactiveWebSitePath
 

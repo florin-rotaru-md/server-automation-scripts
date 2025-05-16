@@ -1,4 +1,4 @@
-function  Set-HostSslSniBind {
+function Set-HostSslSniBind {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -10,7 +10,7 @@ function  Set-HostSslSniBind {
 
     $webSiteBindingInfo = Get-WebBinding | Where-Object { $_.bindingInformation -eq "*:443:$HostName" } | Select-Object -First 1
 
-    if ($webSiteBindingInfo -and (($webSiteBindingInfo.protocol -ne "https") -or ($webSiteBindingInfo.sslFlags -ne 3))) {
+    if ($webSiteBindingInfo) {
         Write-Host "Remove (*:443:$HostName) binding"
         Remove-WebBinding -BindingInformation "*:443:$HostName"
         $webSiteBindingInfo = $null

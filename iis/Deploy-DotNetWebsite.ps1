@@ -79,6 +79,8 @@ function Deploy-DotNetWebsite {
     Write-Host "dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true"
     dotnet publish $csprojPath -c Release -r win-x64 -o $buildPublishPath /p:PublishReadyToRun=true
 
+    Write-Host "Published to $buildPublishPath" -ForegroundColor Green
+
     Switch-ToInactiveWebsiteSlot `
         -HostName $HostName `
         -BlueWebSitePath $blueWebSitePath `

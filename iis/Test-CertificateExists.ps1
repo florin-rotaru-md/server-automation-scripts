@@ -6,7 +6,6 @@ function Test-CertificateExists {
     )
 
     $wacsRenewalsPath = "C:\ProgramData\win-acme\acme-v02.api.letsencrypt.org\Renewals"
-
     Write-Host "CCSConfigFile: $CCSConfigFile"
 
     $ccsConfig = Get-Content -Path $CCSConfigFile | ConvertFrom-Json
