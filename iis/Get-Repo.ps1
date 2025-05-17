@@ -8,6 +8,8 @@ function Get-Repo {
             The URL of the Git repository to clone or update.
         .PARAMETER repoBranch
             The branch of the repository to clone or update.
+        .PARAMETER repoToken
+            The GitHub token for authentication.
         .PARAMETER destinationPath
             The local path where the repository should be cloned or updated.
         .EXAMPLE
@@ -17,6 +19,7 @@ function Get-Repo {
     param (
         [string]$RepoUrl,
         [string]$RepoBranch,
+        [string]$RepoToken,
         [string]$DestinationPath
     )
     
