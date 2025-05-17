@@ -1,8 +1,25 @@
 function Write-CrsRecommendedConfig {
+    <#
+        .SYNOPSIS
+        Generates a configuration file for OWASP Core Rule Set (CRS) with recommended values.
+        .DESCRIPTION
+        This script creates a configuration file with recommended values for the OWASP Core Rule Set (CRS).
+        .PARAMETER FilePath
+        The path where the configuration file will be created.
+        .EXAMPLE
+        Write-CrsRecommendedConfig -FilePath "C:\path\to\your\file.conf"
+        This command generates a configuration file at the specified path.
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$FilePath
     )
+    
+    # Check if the file path is provided
+    if (-not $FilePath) {
+        throw "File path is required."
+    }
 
     $configContent = @"
 # Recommended CRS Setup Configuration

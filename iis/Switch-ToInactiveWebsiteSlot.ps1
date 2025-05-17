@@ -27,6 +27,7 @@ function Switch-ToInactiveWebsiteSlot {
         .PARAMETER WacsArgsEmailAddress
             Email address for Let's Encrypt notifications.
     #>
+    [CmdletBinding()]
     param (
         [string]$HostName,
         [string]$BlueWebSitePath,

@@ -1,17 +1,4 @@
 function Deploy-DotNetWebsite {
-    param(
-        [string]$RepoUrl = "https://github.com/your-org/your-repo.git",
-        [string]$RepoBranch = "main",
-        [string]$RepoToken = "ghp_***",
-        [string]$ProjectPath = "App/App.csproj",
-        [string]$HostName = "demo.com",
-        [int]$GreenHttpPort = 8001,
-		[int]$BlueHttpPort = 8002,
-        [string]$CCSConfigFile = "C:\config\ccs.json",
-        [string]$WacsValidationMethod = "cloudflare-dns",
-        [string]$WacsArgsCloudflareTokenPath = "C:\config\tokens\clooudflare-zone-dns-demo.com.txt",
-        [string]$WacsArgsEmailAddress = "rotaru.i.florin@outlook.com"
-    )
     <#
         .SYNOPSIS
             Deploys a .NET website to IIS.
@@ -38,6 +25,20 @@ function Deploy-DotNetWebsite {
         .PARAMETER WacsArgsEmailAddress
             The email address for Let's Encrypt notifications.
     #>
+    [CmdletBinding()]
+    param(
+        [string]$RepoUrl = "https://github.com/your-org/your-repo.git",
+        [string]$RepoBranch = "main",
+        [string]$RepoToken = "ghp_***",
+        [string]$ProjectPath = "App/App.csproj",
+        [string]$HostName = "demo.com",
+        [int]$GreenHttpPort = 8001,
+		[int]$BlueHttpPort = 8002,
+        [string]$CCSConfigFile = "C:\config\ccs.json",
+        [string]$WacsValidationMethod = "cloudflare-dns",
+        [string]$WacsArgsCloudflareTokenPath = "C:\config\tokens\clooudflare-zone-dns-demo.com.txt",
+        [string]$WacsArgsEmailAddress = "rotaru.i.florin@outlook.com"
+    )
     
     $ErrorActionPreference = "Stop"
 

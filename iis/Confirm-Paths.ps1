@@ -9,6 +9,7 @@ function Confirm-Paths {
         .EXAMPLE
             Confirm-Paths -Paths "C:\MyFolder", "D:\AnotherFolder"
     #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
         [string[]]$Paths

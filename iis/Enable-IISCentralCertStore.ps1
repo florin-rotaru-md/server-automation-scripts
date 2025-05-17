@@ -1,4 +1,18 @@
 function Enable-IISCentralCertStore {
+    <#
+        .SYNOPSIS
+        Enable the IIS Central Certificate Store (CCS) for SSL certificate management.
+
+        .DESCRIPTION
+        This function enables the IIS Central Certificate Store (CCS) by creating a directory for the CCS,
+        granting IIS_IUSRS access to it, and configuring the CCS with the provided credentials.
+
+        .PARAMETER CCSConfigFile
+        The path to the JSON configuration file containing CCS settings.
+
+        .EXAMPLE
+        Enable-IISCentralCertStore -CCSConfigFile "C:\path\to\ccs_config.json"
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]

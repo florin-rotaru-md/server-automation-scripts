@@ -1,9 +1,4 @@
 function Get-Repo {
-    param (
-        [string]$RepoUrl,
-        [string]$RepoBranch,
-        [string]$DestinationPath
-    )
     <#
         .SYNOPSIS
             Clone or update a Git repository.
@@ -18,6 +13,12 @@ function Get-Repo {
         .EXAMPLE
             Get-Repo -repoUrl "
     #>
+    [CmdletBinding()]
+    param (
+        [string]$RepoUrl,
+        [string]$RepoBranch,
+        [string]$DestinationPath
+    )
     
     if (!((Get-ChildItem -Path $DestinationPath).Count -gt 0)) {
         $secureRepoUrl = $RepoUrl -replace "https://", "https://$repoToken@"

@@ -1,4 +1,17 @@
 function Initialize-IIS {
+    <#
+        .SYNOPSIS
+        Initializes the IIS server with recommended settings.
+        .DESCRIPTION
+        This script sets up the IIS server with recommended settings, including enabling TLS 1.3, installing ARR, and configuring ModSecurity if specified.
+        .PARAMETER UseModSecurity
+        Indicates whether to enable ModSecurity.
+        .PARAMETER CCSConfigFile
+        The path to the Central Certificate Store (CCS) configuration file.
+        .EXAMPLE
+        Initialize-IIS -UseModSecurity $true -CCSConfigFile "C:\config\ccs.json"
+    #>
+    [CmdletBinding()]
     param (
         [bool]$UseModSecurity = $false,
         [string]$CCSConfigFile = "C:\config\ccs.json"

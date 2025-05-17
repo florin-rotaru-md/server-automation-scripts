@@ -1,4 +1,18 @@
 function Remove-ReferencePathAndOlderDirectories {
+    <#
+        .SYNOPSIS
+        Removes a reference path and all directories older than the reference path.
+        .DESCRIPTION
+        This function deletes a specified reference path and all directories within a specified path that are older than the reference path.
+        .PARAMETER Path
+        The path to check for directories to remove.
+        .PARAMETER ReferencePath
+        The reference path whose creation date is used to determine which directories to remove.
+        .EXAMPLE
+        Remove-ReferencePathAndOlderDirectories -Path "C:\MyDirectories" -ReferencePath "C:\MyDirectories\Reference"
+        This command removes the reference path and all directories in "C:\MyDirectories" that are older than the reference path.
+    #>
+    [CmdletBinding()]
     param(
         [string]$Path,
         [string]$ReferencePath

@@ -1,4 +1,18 @@
 function Remove-NonRequiredIISModules {
+    <#
+        .SYNOPSIS
+        Removes non-required global IIS modules.
+        .DESCRIPTION
+        This function removes global IIS modules that are not required for the specified web application.
+        .PARAMETER UseModSecurity
+        Indicates whether to keep the ModSecurity module.
+        .PARAMETER RequiredModules
+        An array of required module names. Only these modules will be kept.
+        .EXAMPLE
+        Remove-NonRequiredIISModules -UseModSecurity $true -RequiredModules @("Module1", "Module2")
+        This command removes all global IIS modules except for ModSecurity and the specified modules.
+    #>
+    [CmdletBinding()]
     param (
         [bool]$UseModSecurity = $false,
         [string[]]$RequiredModules = @(

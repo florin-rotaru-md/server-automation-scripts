@@ -1,4 +1,23 @@
 function Request-Http01LetsEncryptCertificate {
+    <#
+        .SYNOPSIS
+            Requests a Let's Encrypt certificate using wacs.exe.
+        .DESCRIPTION
+            This function requests a Let's Encrypt certificate for the specified host name using wacs.exe.
+        .PARAMETER HostName
+            The host name for which to request the certificate.
+        .PARAMETER WebRoot
+            The web root directory for the validation process.
+        .PARAMETER WacsArgsEmailAddress
+            The email address for Let's Encrypt notifications (optional).
+        .EXAMPLE
+            Request-LetsEncryptCertificate -HostName "example.com" -WebRoot "C:\inetpub\wwwroot"
+        .NOTES  
+            This script requires wacs.exe to be installed and available at the specified path.
+            The script will prompt for an email address if not provided.
+            The script will throw an error if the certificate request fails.
+    #>
+    [CmdletBinding()]
     param (
         [string]$HostName,
         [string]$CCSConfigFile,

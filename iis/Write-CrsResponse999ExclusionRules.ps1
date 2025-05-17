@@ -1,7 +1,24 @@
 function Write-CrsResponse999ExclusionRules {
+    <#
+        .SYNOPSIS
+        Generates a configuration file for OWASP Core Rule Set (CRS) exclusion rules.
+        .DESCRIPTION
+        This script creates a configuration file with recommended exclusion rules for the OWASP Core Rule Set (CRS).
+        .PARAMETER FilePath
+        The path where the configuration file will be created.
+        .EXAMPLE
+        Write-CrsResponse999ExclusionRules -FilePath "C:\path\to\your\file.conf"
+        This command generates a configuration file at the specified path.
+    #>
+    [CmdletBinding()]
     param (
         [string]$FilePath
     )
+   
+    # Check if the file path is provided
+    if (-not $FilePath) {
+        throw "File path is required."
+    }
 
     # Define the recommended exclusion rules
     $rules = @"

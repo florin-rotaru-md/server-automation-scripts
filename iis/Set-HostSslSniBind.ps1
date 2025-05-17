@@ -1,4 +1,17 @@
 function Set-HostSslSniBind {
+    <#
+        .SYNOPSIS
+        Sets the SSL SNI binding for a specified IIS website.
+        .DESCRIPTION
+        This function checks if an SSL SNI binding exists for the specified hostname and port. If it does, it removes it and creates a new one.
+        .PARAMETER WebSiteName
+        The name of the IIS website to bind the SSL certificate to.
+        .PARAMETER HostName
+        The hostname for the SSL binding.
+        .EXAMPLE
+        Set-HostSslSniBind -WebSiteName "MyWebsite" -HostName "example.com"
+        This command sets the SSL SNI binding for the "MyWebsite" IIS website to the hostname "example.com".
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]

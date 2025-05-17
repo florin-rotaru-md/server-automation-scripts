@@ -1,4 +1,25 @@
 function Install-Application {
+    <#
+    .SYNOPSIS
+        Installs an application if it is not already installed.
+    .DESCRIPTION
+        This function checks if a specified application is installed by verifying the existence of its executable file.
+        If the application is not installed, it downloads the installer from a specified URL and installs it silently.
+    .PARAMETER AppName
+        The name of the application to install (e.g., Notepad++, VSCode).
+    .PARAMETER AppExecutablePath
+        The path to the application's executable file to check if the app is already installed.
+    .PARAMETER InstallerUrl
+        The URL to download the installer for the application.
+    .PARAMETER InstallerPath
+        The temporary path where the installer will be downloaded.
+    .PARAMETER InstallArgs
+        The arguments for silent installation (default is "/S").
+    .EXAMPLE
+        Install-Application -AppName "Notepad++" -AppExecutablePath "C:\Program Files\Notepad++\notepad++.exe" `
+                            -InstallerUrl "
+    #>
+    [CmdletBinding()]
     param (
         [string]$AppName, # Name of the application (e.g., Notepad++, VSCode)
         [string]$AppExecutablePath, # Path to check if the app is already installed

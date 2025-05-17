@@ -15,6 +15,7 @@ function Test-WebsiteHealth {
         .OUTPUTS
             Returns $true on success; throws on failure (so you can catch or let it abort the script).
     #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory)][string]$Url,
         [hashtable]$Headers = @{},

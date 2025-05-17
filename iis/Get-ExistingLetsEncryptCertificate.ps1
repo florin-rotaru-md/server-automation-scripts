@@ -1,4 +1,17 @@
 function Get-ExistingLetsEncryptCertificate {
+    <#
+        .SYNOPSIS
+            Retrieves an existing Let's Encrypt certificate for a specified hostname.
+        .DESCRIPTION
+            This function searches the local machine's certificate store for a valid Let's Encrypt certificate that matches the specified hostname and has not expired.
+        .PARAMETER HostName
+            The hostname for which to retrieve the certificate.
+        .PARAMETER MinimumDaysValid
+            The minimum number of days the certificate must be valid. Default is 3 days.
+        .EXAMPLE
+            Get-ExistingLetsEncryptCertificate -HostName "example.com"
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$HostName,

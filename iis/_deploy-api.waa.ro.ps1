@@ -3,7 +3,7 @@
 Deploy-DotNetWebsite `
   -RepoUrl "https://github.com/florin-rotaru-md/Statics.git" `
   -RepoBranch "master" `
-  -RepoToken "ghp_" `
+  -RepoToken "ghp_***" `
   -ProjectPath "Apps/Waa/Waa.Server/Waa.Server.csproj" `
   -HostName "api.waa.ro" `
   -GreenHttpPort 8001 `

@@ -1,4 +1,22 @@
 function Set-LetsEncryptCertificateToIIS {
+    <#
+        .SYNOPSIS
+        Binds a Let's Encrypt certificate to an IIS website.
+        .DESCRIPTION
+        This function binds a Let's Encrypt certificate to the specified IIS website using the provided hostname and thumbprint.
+        .PARAMETER WebSiteName
+        The name of the IIS website to bind the certificate to.
+        .PARAMETER HostName
+        The hostname for the SSL binding.
+        .PARAMETER Thumbprint
+        The thumbprint of the certificate to bind.
+        .PARAMETER HttpsPort
+        The HTTPS port for the binding (default is 443).
+        .EXAMPLE
+        Set-LetsEncryptCertificateToIIS -WebSiteName "MyWebsite" -HostName "example.com" -Thumbprint "ABC1234567890ABC1234567890ABC1234567890AB"
+        This command binds the specified Let's Encrypt certificate to the "MyWebsite" IIS website for the hostname "example.com" on port 443.
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$WebSiteName,

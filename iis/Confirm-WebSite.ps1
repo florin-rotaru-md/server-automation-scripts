@@ -1,11 +1,4 @@
 function Confirm-WebSite {
-	param (
-		[string]$WebSiteName,
-		[string]$HostName,
-		[string]$PhysicalPath,
-		[int]$GreenHttpPort,
-		[int]$BlueHttpPort
-	)
 	<#
 	.SYNOPSIS
 		Ensure that the specified IIS website exists, creating it if necessary.
@@ -24,6 +17,14 @@ function Confirm-WebSite {
 	.EXAMPLE
 		Confirm-WebSite -WebSiteName "MyWebsite" -HostName "www.example.com" -PhysicalPath "C:\inetpub\wwwroot\MyWebsite"
 	#>
+	[CmdletBinding()]
+	param (
+		[string]$WebSiteName,
+		[string]$HostName,
+		[string]$PhysicalPath,
+		[int]$GreenHttpPort,
+		[int]$BlueHttpPort
+	)
 
 	Import-Module WebAdministration
 

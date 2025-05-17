@@ -1,7 +1,4 @@
 function Remove-DirectoryContents {
-    param (
-        [string]$Directory,
-        [string[]]$ExcludeNames )
     <#
         .SYNOPSIS
             Remove all contents of a directory, excluding specified names.
@@ -14,6 +11,10 @@ function Remove-DirectoryContents {
         .EXAMPLE
             Remove-DirectoryContents -Directory "C:\MyFolder" -ExcludeNames @("keep.txt", "important")
     #>
+    [CmdletBinding()]
+    param (
+        [string]$Directory,
+        [string[]]$ExcludeNames )
 
     if (-not (Test-Path -Path $Directory)) {
         return

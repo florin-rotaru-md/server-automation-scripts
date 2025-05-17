@@ -1,9 +1,27 @@
 function Test-CertificateExists {
+    <#
+        .SYNOPSIS
+        Checks if a certificate exists in the Centralized Certificate Store (CCS) or in the WACS renewal configuration.
+        .DESCRIPTION
+        This function checks if a certificate for the specified hostname exists in the Centralized Certificate Store (CCS) or in the WACS renewal configuration.
+        .PARAMETER HostName
+        The hostname of the certificate to check.
+        .PARAMETER CCSConfigFile
+        The path to the CCS configuration file.
+        .EXAMPLE
+        Test-CertificateExists -HostName "example.com" -CCSConfigFile "C:\path\to\ccsconfig.json"
+    #>
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$HostName,
         [string]$CCSConfigFile
     )
+    
+    # Check if the HostName parameter is provided
+    if (-not $HostName) {
+        throw "HostName parameter is required."
+    }
 
     $wacsRenewalsPath = "C:\ProgramData\win-acme\acme-v02.api.letsencrypt.org\Renewals"
     Write-Host "CCSConfigFile: $CCSConfigFile"
