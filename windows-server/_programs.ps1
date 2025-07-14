@@ -60,23 +60,23 @@ Install-Application -AppName "OpenSSL" `
     -InstallerPath "$tempInstallerPath/Win64OpenSSL-3_5_0.msi" `
     -InstallArgs "/quiet /norestart"
 
-# Install .NET 8 Hosting Bundle
-Install-Application -AppName ".NET 8 Hosting Bundle" `
-    -AppExecutablePath  "C:\Program Files\IIS\Asp.Net Core Module\V2" `
-    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/8.0.15/dotnet-hosting-8.0.15-win.exe" `
-    -InstallerPath "$tempInstallerPath\dotnet-hosting-8.0.15-win.exe"
+# Install .NET 10 Hosting Bundle
+Install-Application -AppName ".NET 10 Hosting Bundle" `
+    -AppExecutablePath  "C:\Program Files\IIS\Asp.Net Core Module\V2\110.0.25148" `
+    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/10.0.0-preview.5.25277.114/dotnet-hosting-10.0.0-preview.5.25277.114-win.exe" `
+    -InstallerPath "$tempInstallerPath\dotnet-hosting-10.0.0-win.exe"
 
-# Install .NET 8 SDK
-Install-Application -AppName ".NET 8 SDK" `
-    -AppExecutablePath  "C:\Program Files\dotnet\sdk" `
-    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.408/dotnet-sdk-8.0.408-win-x64.exe" `
-    -InstallerPath "$tempInstallerPath\dotnet-sdk-8.0.408-win-x64.exe"
+# Install .NET 10 SDK
+Install-Application -AppName ".NET 10 SDK" `
+    -AppExecutablePath  "C:\Program Files\dotnet\sdk\10.0.0" `
+    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100-preview.5.25277.114/dotnet-sdk-10.0.100-preview.5.25277.114-win-x64.exe" `
+    -InstallerPath "$tempInstallerPath\dotnet-sdk-10.0.0-win-x64.exe"
 
-# Install ASP.NET Core Runtime 8
-Install-Application -AppName "ASP.NET Core Runtime 8" `
-    -AppExecutablePath "C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.15" `
-    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/8.0.15/aspnetcore-runtime-8.0.15-win-x64.exe" `
-    -InstallerPath "$tempInstallerPath\aspnetcore-runtime-8.0.15-win-x64.exe" `
+# Install ASP.NET Core Runtime 10
+Install-Application -AppName "ASP.NET Core Runtime 10" `
+    -AppExecutablePath "C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\10.0.0" `
+    -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.0-preview.5.25277.114/dotnet-runtime-10.0.0-preview.5.25277.114-win-x64.exe" `
+    -InstallerPath "$tempInstallerPath\aspnetcore-runtime-10.0.0-win-x64.exe" `
     -InstallArgs "/quiet /norestart"
 
 # Install Notepad++ if not already installed
