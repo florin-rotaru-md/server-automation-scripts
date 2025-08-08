@@ -1,3 +1,5 @@
+# Set-ExecutionPolicy Unrestricted
+
 # ======================================
 # Create a new "Server Mode" power plan
 # OS: Windows 11
@@ -11,54 +13,66 @@
 # | **Minimum CPU state**     | 1%         | 1%         |
 # | **Maximum CPU state**     | 100%       | 40%        |
 # | **Lid close action**      | Do nothing | Do nothing |
-# | **USB selective suspend** | Disabled   | Disabled   |
 # | **Hibernation**           | Off        | Off        |
 
+# ======================================
+# Create or Update "Server Mode" Power Plan
+# OS: Windows 11
+# ======================================
 
-# 1. Create a new plan based on High Performance
-$baseScheme = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"  # High performance GUID
 $newSchemeName = "Server Mode"
-Write-Host "Creating new power plan: $newSchemeName..." -ForegroundColor Cyan
-$newSchemeGuid = (powercfg /duplicatescheme $baseScheme) -replace '.*: ([a-f0-9\-]+).*', '$1'
+$baseScheme = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"  # High Performance GUID
 
-# 2. Rename the new plan
-powercfg /changename $newSchemeGuid "$newSchemeName"
+# Function to apply all custom settings to a given plan GUID
+function Set-ServerModeSettings {
+    param($schemeGuid)
 
-# 3. Turn off display after (minutes)
-powercfg /setacvalueindex $newSchemeGuid SUB_VIDEO VIDEOIDLE 1     # Plugged in: 1 min
-powercfg /setdcvalueindex $newSchemeGuid SUB_VIDEO VIDEOIDLE 1     # On battery: 1 min
+    Write-Host "Applying settings to $newSchemeName..." -ForegroundColor Cyan
 
-# 4. Put the computer to sleep after (minutes)
-powercfg /setacvalueindex $newSchemeGuid SUB_SLEEP STANDBYIDLE 0   # Plugged in: Never
-powercfg /setdcvalueindex $newSchemeGuid SUB_SLEEP STANDBYIDLE 180 # On battery: 3h
+    # Turn off display after (minutes)
+    powercfg /setacvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 1
+    powercfg /setdcvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 1
 
-# 5. Turn off hard disk after (seconds)
-powercfg /setacvalueindex $newSchemeGuid SUB_DISK DISKIDLE 0       # Plugged in: Never (SSD safe)
-powercfg /setdcvalueindex $newSchemeGuid SUB_DISK DISKIDLE 1800    # On battery: 30 min
+    # Sleep after (minutes)
+    powercfg /setacvalueindex $schemeGuid SUB_SLEEP STANDBYIDLE 0
+    powercfg /setdcvalueindex $schemeGuid SUB_SLEEP STANDBYIDLE 180
 
-# 6. Minimum processor state (%)
-powercfg /setacvalueindex $newSchemeGuid SUB_PROCESSOR PROCTHROTTLEMIN 1  # Plugged in: 1%
-powercfg /setdcvalueindex $newSchemeGuid SUB_PROCESSOR PROCTHROTTLEMIN 1  # On battery: 1%
+    # Turn off hard disk after (seconds)
+    powercfg /setacvalueindex $schemeGuid SUB_DISK DISKIDLE 0
+    powercfg /setdcvalueindex $schemeGuid SUB_DISK DISKIDLE 1800
 
-# 7. Maximum processor state (%)
-powercfg /setacvalueindex $newSchemeGuid SUB_PROCESSOR PROCTHROTTLEMAX 100 # Plugged in: 100%
-powercfg /setdcvalueindex $newSchemeGuid SUB_PROCESSOR PROCTHROTTLEMAX 40  # On battery: 40%
+    # Minimum processor state (%)
+    powercfg /setacvalueindex $schemeGuid SUB_PROCESSOR PROCTHROTTLEMIN 1
+    powercfg /setdcvalueindex $schemeGuid SUB_PROCESSOR PROCTHROTTLEMIN 1
 
-# 8. Lid close action
-# 0 = Do nothing, 1 = Sleep, 2 = Hibernate, 3 = Shut down
-powercfg /setacvalueindex $newSchemeGuid SUB_BUTTONS LIDACTION 0
-powercfg /setdcvalueindex $newSchemeGuid SUB_BUTTONS LIDACTION 0
+    # Maximum processor state (%)
+    powercfg /setacvalueindex $schemeGuid SUB_PROCESSOR PROCTHROTTLEMAX 100
+    powercfg /setdcvalueindex $schemeGuid SUB_PROCESSOR PROCTHROTTLEMAX 40
 
-# 9. Disable USB selective suspend
-# 0 = Disable, 1 = Enable
-powercfg /setacvalueindex $newSchemeGuid SUB_USB USBSELECTIVE 0
-powercfg /setdcvalueindex $newSchemeGuid SUB_USB USBSELECTIVE 0
+    # Lid close action
+    powercfg /setacvalueindex $schemeGuid SUB_BUTTONS LIDACTION 0
+    powercfg /setdcvalueindex $schemeGuid SUB_BUTTONS LIDACTION 0
+}
 
-# 10. Disable hibernation globally
+# Check if the plan already exists
+$existingSchemeGuid = (powercfg /list | Select-String -Pattern $newSchemeName) -replace '.*GUID: ([a-f0-9\-]+).*', '$1'
+
+if ($existingSchemeGuid) {
+    Write-Host "Power plan '$newSchemeName' already exists. Updating settings..." -ForegroundColor Yellow
+    Set-ServerModeSettings $existingSchemeGuid
+    $schemeToActivate = $existingSchemeGuid
+} else {
+    Write-Host "Power plan '$newSchemeName' does not exist. Creating it..." -ForegroundColor Cyan
+    $newSchemeGuid = (powercfg /duplicatescheme $baseScheme) -replace '.*: ([a-f0-9\-]+).*', '$1'
+    powercfg /changename $newSchemeGuid "$newSchemeName"
+    Set-ServerModeSettings $newSchemeGuid
+    $schemeToActivate = $newSchemeGuid
+}
+
+# Disable hibernation globally
 Write-Host "Disabling hibernation..." -ForegroundColor Yellow
 powercfg /hibernate off
 
-# 11. Activate the new plan
-powercfg /setactive $newSchemeGuid
-
-Write-Host "Power plan '$newSchemeName' created and activated successfully." -ForegroundColor Green
+# Activate the plan
+powercfg /setactive $schemeToActivate
+Write-Host "Power plan '$newSchemeName' is now active with all custom settings applied." -ForegroundColor Green
