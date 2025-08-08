@@ -30,12 +30,12 @@ function Set-ServerModeSettings {
     Write-Host "Applying settings to $newSchemeName..." -ForegroundColor Cyan
 
     # Turn off display after (minutes)
-    powercfg /setacvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 1
-    powercfg /setdcvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 1
+    powercfg /setacvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 60
+    powercfg /setdcvalueindex $schemeGuid SUB_VIDEO VIDEOIDLE 60
 
     # Sleep after (minutes)
     powercfg /setacvalueindex $schemeGuid SUB_SLEEP STANDBYIDLE 0
-    powercfg /setdcvalueindex $schemeGuid SUB_SLEEP STANDBYIDLE 180
+    powercfg /setdcvalueindex $schemeGuid SUB_SLEEP STANDBYIDLE 10800
 
     # Turn off hard disk after (seconds)
     powercfg /setacvalueindex $schemeGuid SUB_DISK DISKIDLE 0
