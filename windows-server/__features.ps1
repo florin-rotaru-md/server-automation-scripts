@@ -24,6 +24,7 @@ Install-WindowsFeatureIfNeeded -FeatureName "DNS"
 
 # IIS and Features
 $features = @(
+	"Containers",
     "Web-Server",
     "Web-Default-Doc", 
     "Web-Http-Errors", 

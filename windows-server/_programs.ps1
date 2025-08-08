@@ -68,13 +68,13 @@ Install-Application -AppName ".NET 10 Hosting Bundle" `
 
 # Install .NET 10 SDK
 Install-Application -AppName ".NET 10 SDK" `
-    -AppExecutablePath  "C:\Program Files\dotnet\sdk\10.0.0" `
+    -AppExecutablePath  "C:\Program Files\dotnet\sdk\10.0.100-preview.5.25277.114" `
     -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100-preview.5.25277.114/dotnet-sdk-10.0.100-preview.5.25277.114-win-x64.exe" `
     -InstallerPath "$tempInstallerPath\dotnet-sdk-10.0.0-win-x64.exe"
 
 # Install ASP.NET Core Runtime 10
 Install-Application -AppName "ASP.NET Core Runtime 10" `
-    -AppExecutablePath "C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\10.0.0" `
+    -AppExecutablePath "C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\10.0.0-preview.5.25277.114" `
     -InstallerUrl "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.0-preview.5.25277.114/dotnet-runtime-10.0.0-preview.5.25277.114-win-x64.exe" `
     -InstallerPath "$tempInstallerPath\aspnetcore-runtime-10.0.0-win-x64.exe" `
     -InstallArgs "/quiet /norestart"
@@ -99,6 +99,67 @@ Install-Application -AppName "Request Router" `
     -InstallerUrl "https://download.microsoft.com/download/E/9/8/E9849D6A-020E-47E4-9FD0-A023E99B54EB/requestRouter_amd64.msi" `
     -InstallerPath "$tempInstallerPath\requestRouter_x64.msi" `
     -InstallArgs "/quiet /norestart"
+
+
+$nssmDestinationFolder = "C:\Program Files\nssm-2.24"
+if (!(Test-Path $nssmDestinationFolder)) {
+    New-Item -ItemType Directory -Path $nssmDestinationFolder
+    
+    $nssmUrl = "https://nssm.cc/release/nssm-2.24.zip"
+    $nssmZipFilePath = "$nssmDestinationFolder\nssm-2.24.zip"
+    Invoke-WebRequest -Uri $nssmUrl -OutFile $nssmZipFilePath
+    Expand-Archive -Path $nssmZipFilePath -DestinationPath (Get-Item $nssmDestinationFolder).Parent.FullName -Force
+
+    Remove-Item $nssmZipFilePath -Force
+    Write-Host "nssm has been installed."
+} Else {
+    Write-Host "nssm is already installed."
+}
+
+$dockerDestinationFolder = "C:\Program Files\docker"
+if (!(Test-Path $dockerDestinationFolder)) {
+    New-Item -ItemType Directory -Path $dockerDestinationFolder
+    
+    $dockerUrl = "https://download.docker.com/win/static/stable/x86_64/docker-28.3.3.zip"
+    $dockerZipFilePath = "$dockerDestinationFolder\docker-28.3.3.zip"
+    Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerZipFilePath
+    Expand-Archive -Path $dockerZipFilePath -DestinationPath (Get-Item $dockerDestinationFolder).Parent.FullName -Force
+
+	Invoke-WebRequest "https://github.com/docker/compose/releases/download/v2.39.1/docker-compose-windows-x86_64.exe" -OutFile "$dockerDestinationFolder\docker-compose.exe"
+
+	$env:Path += ";C:\Program Files\docker"
+	[Environment]::SetEnvironmentVariable("Path", $env:Path, [EnvironmentVariableTarget]::Machine)
+	
+    Remove-Item $dockerZipFilePath -Force
+    Write-Host "Docker has been installed."
+} Else {
+    Write-Host "Docker is already installed."
+}
+
+# Define paths to Docker and NSSM executables
+$dockerdPath = "$dockerDestinationFolder\dockerd.exe"
+$nssmPath = "$nssmDestinationFolder\win64\nssm.exe"
+
+# Define the Windows service name
+$dockerdServiceName = "DockerEngine"
+
+# Check if the service already exists
+$existingService = Get-Service -Name $dockerdServiceName -ErrorAction SilentlyContinue
+
+if ($existingService) {
+    Write-Host "Service '$dockerdServiceName' already exists."
+} else {
+    # Create the service using NSSM
+    & "$nssmPath" install $dockerdServiceName "$dockerdPath"
+
+    # Set the service to start automatically at boot
+    & "$nssmPath" set $dockerdServiceName Start SERVICE_AUTO_START
+
+    # Start the service
+    Start-Service $dockerdServiceName
+
+    Write-Host "Service '$dockerdServiceName' has been created and started."  -ForegroundColor Cyan
+}
 
 $handleDestinationFolder = "C:\Program Files\Handle"
 if (!(Test-Path $handleDestinationFolder)) {

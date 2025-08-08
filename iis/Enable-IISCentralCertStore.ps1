@@ -40,6 +40,7 @@ function Enable-IISCentralCertStore {
         $securePassword = $($ccsConfig.password) | ConvertTo-SecureString -AsPlainText -Force
         # $securePrivateKeyPassword = $($ccsConfig.privateKeyPassword) | ConvertTo-SecureString -AsPlainText -Force
         $securePrivateKeyPassword = New-Object -TypeName System.Security.SecureString
+        
 
         Enable-IISCentralCertProvider `
             -CertStoreLocation $physicalPath `

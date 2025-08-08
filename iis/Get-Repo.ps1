@@ -23,6 +23,8 @@ function Get-Repo {
         [string]$DestinationPath
     )
     
+    git config --global --unset credential.helper
+
     if (!((Get-ChildItem -Path $DestinationPath).Count -gt 0)) {
         $secureRepoUrl = $RepoUrl -replace "https://", "https://$repoToken@"
         Write-Host "git clone --branch $RepoBranch $DestinationPath"

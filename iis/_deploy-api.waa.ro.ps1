@@ -21,3 +21,4 @@ Deploy-DotNetWebsite `
   -WacsValidationMethod "cloudflare-dns" `
   -WacsArgsCloudflareTokenPath "C:\config\tokens\clooudflare-zone-dns-waa.ro.txt" `
   -WacsArgsEmailAddress "rotaru.i.florin@outlook.com" `
+
