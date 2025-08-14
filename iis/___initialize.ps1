@@ -1,3 +1,3 @@
-. ".\Initialize-IIS.ps1"
+. "$PSScriptRoot\Initialize-IIS.ps1"
 
 Initialize-IIS -UseModSecurity $false

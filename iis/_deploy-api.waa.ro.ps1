@@ -1,4 +1,4 @@
-. ".\Deploy-DotNetWebsite.ps1"
+. "$PSScriptRoot\Deploy-DotNetWebsite.ps1"
 
 $repoTokenFile = "C:\config\tokens\github-statics.txt"
 

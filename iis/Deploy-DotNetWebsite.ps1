@@ -46,10 +46,10 @@ function Deploy-DotNetWebsite {
         throw "GreenHttpPort and BlueHttpPort must be different."
     }
 
-    . ".\Confirm-Paths.ps1"
-    . ".\Get-Repo.ps1"
-    . ".\Remove-ReferencePathAndOlderDirectories.ps1"
-    . ".\Switch-ToInactiveWebsiteSlot.ps1"
+    . "$PSScriptRoot\Confirm-Paths.ps1"
+    . "$PSScriptRoot\Get-Repo.ps1"
+    . "$PSScriptRoot\Remove-ReferencePathAndOlderDirectories.ps1"
+    . "$PSScriptRoot\Switch-ToInactiveWebsiteSlot.ps1"
 
     if (-not (Get-Module -Name WebAdministration)) {
         Import-Module WebAdministration -ErrorAction Stop

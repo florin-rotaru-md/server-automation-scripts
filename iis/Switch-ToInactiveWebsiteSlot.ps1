@@ -45,15 +45,15 @@ function Switch-ToInactiveWebsiteSlot {
 
     Import-Module WebAdministration
 
-    . ".\Confirm-WebSite.ps1"
-    . ".\Get-ExistingLetsEncryptCertificate.ps1"
-    . ".\Remove-DirectoryContents.ps1"
-    . ".\Request-CloudflareDns01LetsEncryptCertificate.ps1"
-    . ".\Request-Http01LetsEncryptCertificate.ps1"
-    . ".\Set-HostSslSniBind.ps1"
-    . ".\Set-LetsEncryptCertificateToIIS.ps1"
-    . ".\Test-CertificateExists.ps1"
-    . ".\Test-WebsiteHealth.ps1"
+    . "$PSScriptRoot\Confirm-WebSite.ps1"
+    . "$PSScriptRoot\Get-ExistingLetsEncryptCertificate.ps1"
+    . "$PSScriptRoot\Remove-DirectoryContents.ps1"
+    . "$PSScriptRoot\Request-CloudflareDns01LetsEncryptCertificate.ps1"
+    . "$PSScriptRoot\Request-Http01LetsEncryptCertificate.ps1"
+    . "$PSScriptRoot\Set-HostSslSniBind.ps1"
+    . "$PSScriptRoot\Set-LetsEncryptCertificateToIIS.ps1"
+    . "$PSScriptRoot\Test-CertificateExists.ps1"
+    . "$PSScriptRoot\Test-WebsiteHealth.ps1"
 
     $inactiveWebSiteName = $null
     $inactiveWebSitePath = $null

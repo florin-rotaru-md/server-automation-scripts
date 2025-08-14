@@ -1,3 +1,3 @@
-. ".\Uninstall-Product.ps1"
+. "$PSScriptRoot\Uninstall-Product.ps1"
 
 Uninstall-Product -ProductName = "ModSecurity"

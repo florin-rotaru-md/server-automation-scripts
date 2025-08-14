@@ -17,13 +17,13 @@ function Initialize-IIS {
         [string]$CCSConfigFile = "C:\config\ccs.json"
     )
 
-    . ".\Enable-IISCentralCertStore.ps1"
-    . ".\Install-Application.ps1"
-    . ".\Set-RegistryPropertyIfExists.ps1"
-    . ".\Write-CrsRecommendedConfig.ps1"
-    . ".\Write-CrsRequest900ExclusionRules.ps1"
-    . ".\Write-CrsResponse999ExclusionRules.ps1"
-    . ".\Remove-NonRequiredIISModules.ps1"
+    . "$PSScriptRoot\Enable-IISCentralCertStore.ps1"
+    . "$PSScriptRoot\Install-Application.ps1"
+    . "$PSScriptRoot\Set-RegistryPropertyIfExists.ps1"
+    . "$PSScriptRoot\Write-CrsRecommendedConfig.ps1"
+    . "$PSScriptRoot\Write-CrsRequest900ExclusionRules.ps1"
+    . "$PSScriptRoot\Write-CrsResponse999ExclusionRules.ps1"
+    . "$PSScriptRoot\Remove-NonRequiredIISModules.ps1"
 
     Write-Host "Setting up IIS..."
 

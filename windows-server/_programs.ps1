@@ -4,7 +4,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-. ".\Install-Application.ps1"
+. "$PSScriptRoot\Install-Application.ps1"
 
 $ProgressPreference = 'SilentlyContinue'
 
