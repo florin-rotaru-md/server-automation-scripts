@@ -11,7 +11,7 @@ $repoToken = Get-Content -Path $repoTokenFile -Raw
 
 Deploy-DotNetWebsite `
   -RepoUrl "https://github.com/florin-rotaru-md/Statics.git" `
-  -RepoBranch "master" `
+  -RepoBranch "waa" `
   -RepoToken $repoToken `
   -ProjectPath "Apps/Waa/Waa.Server/Waa.Server.csproj" `
   -HostName "api.waa.ro" `
