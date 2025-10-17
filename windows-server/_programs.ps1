@@ -206,16 +206,16 @@ if (!(Test-Path $winAcmePluginDestinationFolder)) {
 $pgInstallArgs = @(
     "--mode", "unattended",
     "--superpassword", "postgres",
-    "--prefix", "`"C:\Program Files\PostgreSQL\17`"",
-    "--datadir", "`"C:\Program Files\PostgreSQL\17\data`"",
+    "--prefix", "`"C:\Program Files\PostgreSQL\18`"",
+    "--datadir", "`"C:\Program Files\PostgreSQL\18\data`"",
     "--unattendedmodeui", "none",
     "--install_runtimes", "1" # Skip installing VC++ runtimes (optional)
 ) -join " "
 
-# Install PostgreSQL 17 Server if not already installed
-Install-Application -AppName "PostgreSQL 17 Server" `
-    -AppExecutablePath "C:\Program Files\PostgreSQL\17" `
-    -InstallerUrl "https://get.enterprisedb.com/postgresql/postgresql-17.1-1-windows-x64.exe" `
+# Install PostgreSQL 18 Server if not already installed
+Install-Application -AppName "PostgreSQL 18 Server" `
+    -AppExecutablePath "C:\Program Files\PostgreSQL\18" `
+    -InstallerUrl "https://get.enterprisedb.com/postgresql/postgresql-18.0-2-windows-x64.exe" `
     -InstallerPath "$tempInstallerPath\postgresql.exe" `
     -InstallArgs $pgInstallArgs 
 
@@ -235,7 +235,7 @@ else {
 }
 
 # Modify PostgreSQL configuration for remote access
-$pgDataPath = "C:\\Program Files\\PostgreSQL\\17\\data"
+$pgDataPath = "C:\\Program Files\\PostgreSQL\\18\\data"
 $pgConfPath = Join-Path $pgDataPath "postgresql.conf"
 $pgHbaPath = Join-Path $pgDataPath "pg_hba.conf"
 
@@ -254,7 +254,7 @@ if (Test-Path $pgConfPath) {
 }
 
 # Restart PostgreSQL service
-Restart-Service -Name "postgresql-x64-17"
+Restart-Service -Name "postgresql-x64-18"
 
 Write-Host "PostgreSQL setup complete. Remote connections enabled, password is 'postgres'." -ForegroundColor Green
 
